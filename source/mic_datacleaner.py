@@ -4,6 +4,7 @@ from pathlib import Path
 from caveclient import CAVEclient
 
 import downloader as dwn
+import pandas as pd
 
 
 class MicronsDataCleaner:
@@ -25,4 +26,11 @@ class MicronsDataCleaner:
 
     def download_nucleus_data(self):
         dwn.download_nucleus_data(self.client,f"{self.data_storage}/raw",  self.tables_2_download)
+
+    def process_nucleus_data(self):
+        nucleus  = pd.read_csv(f"{self.data_storage}/raw/nucleus_detection_v0.csv")
+        celltype = pd.read_csv(f"{self.data_storage}/raw/aibs_metamodel_celltypes_v661.csv")
+        nucleus_merged = dwn.merge_nucleus_with_cell_types(nucleus, celltype)
+
+        return dwn.transform_positions(nucleus_merged)
 
