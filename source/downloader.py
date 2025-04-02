@@ -33,7 +33,7 @@ def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
 
     merged = nucleus_df.merge(cell_type_df, left_on=['id'], right_on=['target_id'], how='inner')
     merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type']]
-    return merged.rename(columns = {'id_x' : 'id', 'pt_root_id_x' : 'pt_rood_id', 'pt_position_x_x' : 'pt_position_x','pt_position_y_x' : 'pt_position_y','pt_position_z_x' : 'pt_position_z'  }) 
+    return merged.rename(columns = {'id_x' : 'id', 'pt_root_id_x' : 'pt_root_id', 'pt_position_x_x' : 'pt_position_x','pt_position_y_x' : 'pt_position_y','pt_position_z_x' : 'pt_position_z'  }) 
     
     
 def transform_positions(nucleus_df):
