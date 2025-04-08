@@ -3,7 +3,8 @@ from pathlib import Path
 
 from caveclient import CAVEclient
 
-import downloader as dwn
+import downloader as down
+import processing as proc
 import pandas as pd
 
 
@@ -27,15 +28,15 @@ class MicronsDataCleaner:
             self.client.version = version
 
     def download_nucleus_data(self):
-        dwn.download_nucleus_data(self.client,f"{self.data_storage}/raw",  self.tables_2_download)
+        down.download_nucleus_data(self.client,f"{self.data_storage}/raw",  self.tables_2_download)
 
     def download_synapse_data(self, presynaptic_set, postsynaptic_set, neurs_per_steps = 500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=False):
-        dwn.connectome_constructor(self.client, presynaptic_set, postsynaptic_set, f"{self.data_storage}/raw/synapses",
+        down.connectome_constructor(self.client, presynaptic_set, postsynaptic_set, f"{self.data_storage}/raw/synapses",
                                    neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
         return
 
     def merge_synapses(self):
-        dwn.merge_connection_tables(f"{self.data_storage}/raw")
+        down.merge_connection_tables(f"{self.data_storage}/raw")
         return
 
     def process_nucleus_data(self):
@@ -45,17 +46,20 @@ class MicronsDataCleaner:
         funcprops = pd.read_csv(f"{self.data_storage}/raw/functional_properties_v3_bcm.csv")
         proofread = pd.read_csv(f"{self.data_storage}/raw/proofreading_status_and_strategy.csv")
 
-        nucleus_merged = dwn.merge_nucleus_with_cell_types(nucleus, celltype)
-        nucleus_merged = dwn.merge_brain_area(nucleus_merged, areas)
-        nucleus_merged = dwn.merge_proofreading_status(nucleus_merged, proofread)
-        #nucleus_merged = dwn.merge_functional_properties(nucleus_merged, funcprops)
+        nucleus_merged = proc.merge_nucleus_with_cell_types(nucleus, celltype)
+        nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
+        nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread)
+        nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops)
 
-        nucleus_merged = dwn.transform_positions(nucleus_merged)
+        nucleus_merged = proc.transform_positions(nucleus_merged)
 
-        segments = dwn.divide_volume_into_segments(nucleus_merged)
-        segments = dwn.merge_segments_by_layer(segments)
+        segments = proc.divide_volume_into_segments(nucleus_merged)
+        segments = proc.merge_segments_by_layer(segments)
 
-        dwn.add_layer_info(nucleus_merged, segments)
+        proc.add_layer_info(nucleus_merged, segments)
+
+        nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
+        nucleus_merged.drop_duplicates(subset='pt_root_id')
 
         return nucleus_merged, segments
 
