@@ -1,6 +1,7 @@
 from caveclient import CAVEclient
 from standard_transform import minnie_ds 
 
+from scipy.stats import circmean
 import numpy as np
 import pandas as pd
 import time as time
@@ -38,6 +39,40 @@ def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
     merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type']]
     return merged.rename(columns = {'id_x' : 'id', 'pt_root_id_x' : 'pt_root_id', 'pt_position_x_x' : 'pt_position_x','pt_position_y_x' : 'pt_position_y','pt_position_z_x' : 'pt_position_z'  }) 
     
+def merge_brain_area(nucleus_df, areas):
+    merged = nucleus_df.merge(areas, left_on=['id'], right_on=['target_id'], how='inner')
+    merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 
+                     'classification_system', 'cell_type', 'tag']]
+
+    return merged.rename(columns = {'id_x' : 'id', 'pt_root_id_x' : 'pt_root_id', 
+                                    'pt_position_x_x' : 'pt_position_x','pt_position_y_x' : 'pt_position_y','pt_position_z_x' : 'pt_position_z',
+                                    'tag' : 'brain_area'}) 
+
+def merge_proofreading_status(nucleus_df, proofreading):
+
+    merged = nucleus_df.merge(proofreading, left_on=['pt_root_id'], right_on=['pt_root_id'], how='left')
+    merged = merged[['pt_root_id', 'id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 
+                     'classification_system', 'cell_type', 'brain_area', 'strategy_dendrite', 'strategy_axon']]
+
+    #Tag the ones that have not been proofread
+    merged.loc[merged['strategy_dendrite'].isna(), "strategy_dendrite"] = "none" 
+    merged.loc[merged['strategy_axon'].isna(), "strategy_axon"] = "none" 
+
+    return merged.rename(columns = {'id_x' : 'id', 'pt_position_x_x' : 'pt_position_x','pt_position_y_x' : 'pt_position_y',
+                                    'pt_position_z_x' : 'pt_position_z'}) 
+
+def merge_functional_properties(nucleus_df, functional, use_directions=False):
+
+    #Take all scans/sessions for each target_id, then average over them.
+    #For the angles we need to use the circmean, so employ apply + a lambda function that returns the average of each thing separately
+    high_circmean = 2*np.pi if use_directions else np.pi
+    funcmean = functional.groupby(['target_id']).apply(lambda x: pd.Series({'pref_ori' : circmean(x['pref_ori'], low=0, high=high_circmean), 'gOSI': x['gOSI'].mean()})) 
+
+    #Then proceed on the merge. In this case there is no common columns so filtering and renaming the result 
+    #after the merge is not necessary anymore
+    merged = nucleus_df.merge(funcmean, left_on=['id'], right_on=['target_id'], how='left')
+
+    return merged
     
 def transform_positions(nucleus_df):
     """
@@ -379,3 +414,10 @@ def merge_connection_tables(savefolder):
 
     table.to_csv(f"{savefolder}/synapses.csv")
     return 
+
+def add_layer_info(neurons_df, segments):
+    for (layer, ystart, yend) in segments[['layer', 'y_start', 'y_end']].values:
+        mask = (neurons_df['pt_position_y'] >= ystart)  & (neurons_df['pt_position_y'] < yend)
+        neurons_df.loc[mask, 'layer'] = layer
+    return
+

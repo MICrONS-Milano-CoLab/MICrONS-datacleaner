@@ -12,7 +12,9 @@ class MicronsDataCleaner:
     homedir = Path().resolve() 
     datadir = "data" 
 
-    tables_2_download = ["nucleus_detection_v0", "baylor_log_reg_cell_type_coarse_v1", "baylor_gnn_cell_type_fine_model_v2", "aibs_metamodel_celltypes_v661"] 
+    tables_2_download = ["nucleus_detection_v0", "baylor_log_reg_cell_type_coarse_v1", "baylor_gnn_cell_type_fine_model_v2", "aibs_metamodel_celltypes_v661", 
+                         "coregistration_manual_v4", "functional_properties_v3_bcm", "nucleus_functional_area_assignment",
+                         "proofreading_status_and_strategy"] 
 
 
     def __init__(self):
@@ -37,13 +39,23 @@ class MicronsDataCleaner:
         return
 
     def process_nucleus_data(self):
-        nucleus  = pd.read_csv(f"{self.data_storage}/raw/nucleus_detection_v0.csv")
-        celltype = pd.read_csv(f"{self.data_storage}/raw/aibs_metamodel_celltypes_v661.csv")
+        nucleus   = pd.read_csv(f"{self.data_storage}/raw/nucleus_detection_v0.csv")
+        celltype  = pd.read_csv(f"{self.data_storage}/raw/aibs_metamodel_celltypes_v661.csv")
+        areas     = pd.read_csv(f"{self.data_storage}/raw/nucleus_functional_area_assignment.csv")
+        funcprops = pd.read_csv(f"{self.data_storage}/raw/functional_properties_v3_bcm.csv")
+        proofread = pd.read_csv(f"{self.data_storage}/raw/proofreading_status_and_strategy.csv")
+
         nucleus_merged = dwn.merge_nucleus_with_cell_types(nucleus, celltype)
+        nucleus_merged = dwn.merge_brain_area(nucleus_merged, areas)
+        nucleus_merged = dwn.merge_proofreading_status(nucleus_merged, proofread)
+        #nucleus_merged = dwn.merge_functional_properties(nucleus_merged, funcprops)
+
         nucleus_merged = dwn.transform_positions(nucleus_merged)
 
         segments = dwn.divide_volume_into_segments(nucleus_merged)
         segments = dwn.merge_segments_by_layer(segments)
+
+        dwn.add_layer_info(nucleus_merged, segments)
 
         return nucleus_merged, segments
 
