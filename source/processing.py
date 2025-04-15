@@ -13,12 +13,25 @@ def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
     Returns:
         DataFrame merged with information about cell types
     """
-
+    if nucleus_df.empty or cell_type_df.empty:
+        print("Warning: Empty dataframe provided to merge_nucleus_with_cell_types")
+        return pd.DataFrame()
+    
     merged = nucleus_df.merge(cell_type_df, left_on=['id'], right_on=['target_id'], how='inner')
     merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type']]
     return merged.rename(columns = {'id_x' : 'id', 'pt_root_id_x' : 'pt_root_id', 'pt_position_x_x' : 'pt_position_x','pt_position_y_x' : 'pt_position_y','pt_position_z_x' : 'pt_position_z'  }) 
     
 def merge_brain_area(nucleus_df, areas):
+    """
+    Merges nucleus data with brain area information
+    
+    Returns:
+        DataFrame merged with brain area information
+    """
+    if nucleus_df.empty or areas.empty:
+        print("Warning: Empty dataframe provided to merge_brain_area")
+        return nucleus_df
+    
     merged = nucleus_df.merge(areas, left_on=['id'], right_on=['target_id'], how='inner')
     merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 
                      'classification_system', 'cell_type', 'tag']]
@@ -28,7 +41,16 @@ def merge_brain_area(nucleus_df, areas):
                                     'tag' : 'brain_area'}) 
 
 def merge_proofreading_status(nucleus_df, proofreading):
-
+    """
+    Merges nucleus data with proofreading status information
+    
+    Returns:
+        DataFrame merged with proofreading information
+    """
+    if nucleus_df.empty:
+        print("Warning: Empty nucleus dataframe provided to merge_proofreading_status")
+        return nucleus_df
+    
     merged = nucleus_df.merge(proofreading, left_on=['pt_root_id'], right_on=['pt_root_id'], how='left')
     merged = merged[['pt_root_id', 'id_x', 'pt_position_x_x',  'pt_position_y_x', 'pt_position_z_x', 
                      'classification_system', 'cell_type', 'brain_area', 'strategy_dendrite', 'strategy_axon']]
@@ -41,7 +63,21 @@ def merge_proofreading_status(nucleus_df, proofreading):
                                     'pt_position_z_x' : 'pt_position_z'}) 
 
 def merge_functional_properties(nucleus_df, functional, use_directions=False):
-
+    """
+    Merges nucleus data with functional properties
+    
+    Args:
+        nucleus_df: DataFrame with nucleus information
+        functional: DataFrame with functional properties
+        use_directions: Whether to use directions for angle calculations (default: False)
+    
+    Returns:
+        DataFrame merged with functional properties
+    """
+    if nucleus_df.empty or functional.empty:
+        print("Warning: Empty dataframe provided to merge_functional_properties")
+        return nucleus_df
+    
     #Take all scans/sessions for each target_id, then average over them.
     #For the angles we need to use the circmean, so employ apply + a lambda function that returns the average of each thing separately
     high_circmean = 2*np.pi if use_directions else np.pi
@@ -60,25 +96,23 @@ def transform_positions(nucleus_df):
     Returns:
         DataFrame with the transformed positions
     """
+    if nucleus_df.empty:
+        print("Warning: Empty dataframe provided to transform_positions")
+        return nucleus_df
     
     transformed_positions = np.empty((len(nucleus_df), 3)) 
     
     k = 0
-    for (x,y,z) in tqdm(nucleus_df[['pt_position_x', 'pt_position_y','pt_position_z']].values, desc="Transform positions"):
-    #for x,y,z in nucleus_df[['pt_position_x', 'pt_position_y','pt_position_z']].values:
+    for k, (x, y, z) in enumerate(tqdm(nucleus_df[['pt_position_x', 'pt_position_y', 'pt_position_z']].values, desc="Transform positions")):
         position = np.array([x,y,z])
         transformed = minnie_ds.transform_vx.apply(position)
         transformed_positions[k, :] = transformed
-        k += 1
-    
-    #nucleus_df['position_um'] = transformed_positions
-    
-    nucleus_df['pt_position_x'] = transformed_positions[:, 0]#[pos[0] for pos in nucleus_df['position_um']]
-    nucleus_df['pt_position_y'] = transformed_positions[:, 1]#[pos[1] for pos in nucleus_df['position_um']]
-    nucleus_df['pt_position_z'] = transformed_positions[:, 2]#[pos[2] for pos in nucleus_df['position_um']]
+        
+    nucleus_df['pt_position_x'] = transformed_positions[:, 0]
+    nucleus_df['pt_position_y'] = transformed_positions[:, 1]
+    nucleus_df['pt_position_z'] = transformed_positions[:, 2]
     
     return nucleus_df
-
 
 ## Adding layer segmentation and assegnations
 LAYER_CELL_TYPES = {
@@ -104,6 +138,10 @@ def divide_volume_into_segments(cells_df, segment_size=10.0):
     Returns:
         pd.DataFrame: Segmented layer information
     """
+    if cells_df.empty:
+        print("Warning: Empty dataframe provided to divide_volume_into_segments")
+        return pd.DataFrame()
+    
     # Calculate the number of segments
     y_min, y_max = cells_df['pt_position_y'].min(), cells_df['pt_position_y'].max()
     num_segments = int(np.ceil((y_max - y_min) / segment_size))
@@ -173,6 +211,9 @@ def enforce_layer_order(segments_df):
     Returns:
         pd.DataFrame: Corrected segments DataFrame
     """
+    if segments_df.empty:
+        return segments_df
+    
     corrected_df = segments_df.copy()
     
     corrected_df['layer_index'] = corrected_df['dominant_layer'].apply(
@@ -223,6 +264,9 @@ def merge_segments_by_layer(segments_df):
     pandas.DataFrame
         DataFrame with merged layer segments
     """
+    if segments_df.empty:
+        return segments_df
+    
     layer_groups = {}
     current_layer = None
     start_idx = 0
@@ -272,6 +316,20 @@ def merge_segments_by_layer(segments_df):
     return merged_df.sort_values('y_start')
 
 def add_layer_info(neurons_df, segments):
+    """
+    Add layer information to neurons based on their position
+    
+    Parameters:
+        neurons_df: DataFrame with neuron information
+        segments: DataFrame with layer segment information
+    
+    Returns:
+        None: neurons_df is modified in-place
+    """
+    if neurons_df.empty or segments.empty:
+        print("Warning: Empty dataframe provided to add_layer_info")
+        return
+    
     for (layer, ystart, yend) in segments[['layer', 'y_start', 'y_end']].values:
         mask = (neurons_df['pt_position_y'] >= ystart)  & (neurons_df['pt_position_y'] < yend)
         neurons_df.loc[mask, 'layer'] = layer

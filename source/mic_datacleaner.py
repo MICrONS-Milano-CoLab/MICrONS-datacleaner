@@ -20,6 +20,10 @@ class MicronsDataCleaner:
 
     def __init__(self):
         self.data_storage = f"{self.homedir}/{self.datadir}"
+        # Ensure directories exist
+        os.makedirs(self.data_storage, exist_ok=True)
+        os.makedirs(f"{self.data_storage}/raw", exist_ok=True)
+        os.makedirs(f"{self.data_storage}/raw/synapses", exist_ok=True)
 
 
     def initialize_client(self, version = None):
@@ -40,28 +44,32 @@ class MicronsDataCleaner:
         return
 
     def process_nucleus_data(self):
-        nucleus   = pd.read_csv(f"{self.data_storage}/raw/nucleus_detection_v0.csv")
-        celltype  = pd.read_csv(f"{self.data_storage}/raw/aibs_metamodel_celltypes_v661.csv")
-        areas     = pd.read_csv(f"{self.data_storage}/raw/nucleus_functional_area_assignment.csv")
-        funcprops = pd.read_csv(f"{self.data_storage}/raw/functional_properties_v3_bcm.csv")
-        proofread = pd.read_csv(f"{self.data_storage}/raw/proofreading_status_and_strategy.csv")
+        try:
+            nucleus   = pd.read_csv(f"{self.data_storage}/raw/nucleus_detection_v0.csv")
+            celltype  = pd.read_csv(f"{self.data_storage}/raw/aibs_metamodel_celltypes_v661.csv")
+            areas     = pd.read_csv(f"{self.data_storage}/raw/nucleus_functional_area_assignment.csv")
+            funcprops = pd.read_csv(f"{self.data_storage}/raw/functional_properties_v3_bcm.csv")
+            proofread = pd.read_csv(f"{self.data_storage}/raw/proofreading_status_and_strategy.csv")
 
-        nucleus_merged = proc.merge_nucleus_with_cell_types(nucleus, celltype)
-        nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
-        nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread)
-        nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops)
+            nucleus_merged = proc.merge_nucleus_with_cell_types(nucleus, celltype)
+            nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
+            nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread)
+            nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops)
 
-        nucleus_merged = proc.transform_positions(nucleus_merged)
+            nucleus_merged = proc.transform_positions(nucleus_merged)
 
-        segments = proc.divide_volume_into_segments(nucleus_merged)
-        segments = proc.merge_segments_by_layer(segments)
+            segments = proc.divide_volume_into_segments(nucleus_merged)
+            segments = proc.merge_segments_by_layer(segments)
 
-        proc.add_layer_info(nucleus_merged, segments)
+            proc.add_layer_info(nucleus_merged, segments)
 
-        nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
-        nucleus_merged.drop_duplicates(subset='pt_root_id')
+            nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
+            nucleus_merged = nucleus_merged.drop_duplicates(subset='pt_root_id')
 
-        return nucleus_merged, segments
-
-
-    
+            return nucleus_merged, segments
+        except FileNotFoundError as e:
+            print(f"Error: Required data file not found: {e}")
+            raise
+        except Exception as e:
+            print(f"Error processing nucleus data: {e}")
+            raise
