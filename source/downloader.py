@@ -46,7 +46,7 @@ def connectome_constructor(client, presynaptic_set, postsynaptic_set, savefolder
     '''
 
     # Ensure directory exists
-    os.makedirs(savefolder, ezist_ok=True)
+    os.makedirs(savefolder, exist_ok=True)
     
     # We are doing the neurons in packages of neurs_per_steps. If neurs_per_steps is not
     #a divisor of the postsynaptic_set the last iteration has less neurons 
