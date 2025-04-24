@@ -28,7 +28,7 @@ class MicronsDataCleaner:
 
     def initialize_client(self, version = None):
         self.client = CAVEclient('minnie65_public') 
-        if version != None:
+        if version is not None:
             self.client.version = version
 
     def download_nucleus_data(self):
