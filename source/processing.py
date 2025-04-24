@@ -10,15 +10,25 @@ def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
 	"""
 	Merges nucleus data with cell types
 
+	Parameters:
+	-----------
+		nucleus_df: nucleus reference table
+		cell_type_df: a classification table including cell types
+
 	Returns:
+	--------
 	    DataFrame merged with information about cell types
 	"""
-	if nucleus_df.empty or cell_type_df.empty:
-		print('Warning: Empty dataframe provided to merge_nucleus_with_cell_types')
-		return pd.DataFrame()
 
+	#Check data validity
+	if nucleus_df.empty or cell_type_df.empty:
+		raise ValueError('Empty dataframe provided to merge_nucleus_with_cell_types')
+
+	#Perform a merge of both tables and keep only the desired columns
 	merged = nucleus_df.merge(cell_type_df, left_on=['id'], right_on=['target_id'], how='inner')
 	merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x', 'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type']]
+
+	#Rename the columns since merge changes names, and return
 	return merged.rename(
 		columns={
 			'id_x': 'id',
@@ -34,16 +44,25 @@ def merge_brain_area(nucleus_df, areas):
 	"""
 	Merges nucleus data with brain area information
 
+	Parameters:
+	-----------
+		nucleus_df: nucleus reference table
+		areas: a classification table including brain areas 
+
 	Returns:
+	-------
 	    DataFrame merged with brain area information
 	"""
-	if nucleus_df.empty or areas.empty:
-		print('Warning: Empty dataframe provided to merge_brain_area')
-		return nucleus_df
 
+	#Check data validity
+	if nucleus_df.empty or areas.empty:
+		raise ValueError('Empty dataframe provided to merge_brain_area')
+
+	#Perform a merge of both tables and keep only the desired columns
 	merged = nucleus_df.merge(areas, left_on=['id'], right_on=['target_id'], how='inner')
 	merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x', 'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type', 'tag']]
 
+	#Rename the columns since merge changes names, and return
 	return merged.rename(
 		columns={
 			'id_x': 'id',
@@ -60,13 +79,22 @@ def merge_proofreading_status(nucleus_df, proofreading):
 	"""
 	Merges nucleus data with proofreading status information
 
+	Parameters:
+	-----------
+		nucleus_df: nucleus reference table
+		proofreading: table including proofreading information 
+
 	Returns:
+	-------
 	    DataFrame merged with proofreading information
 	"""
-	if nucleus_df.empty:
-		print('Warning: Empty nucleus dataframe provided to merge_proofreading_status')
-		return nucleus_df
 
+
+	#Check data validity
+	if nucleus_df.empty:
+		raise ValueError('Empty nucleus dataframe provided to merge_proofreading_status')
+
+	#Perform a merge of both tables and keep only the desired columns
 	merged = nucleus_df.merge(proofreading, left_on=['pt_root_id'], right_on=['pt_root_id'], how='left')
 	merged = merged[
 		[
@@ -87,6 +115,7 @@ def merge_proofreading_status(nucleus_df, proofreading):
 	merged.loc[merged['strategy_dendrite'].isna(), 'strategy_dendrite'] = 'none'
 	merged.loc[merged['strategy_axon'].isna(), 'strategy_axon'] = 'none'
 
+	#Return the result 
 	return merged.rename(columns={'id_x': 'id', 'pt_position_x_x': 'pt_position_x', 'pt_position_y_x': 'pt_position_y', 'pt_position_z_x': 'pt_position_z'})
 
 
@@ -94,17 +123,20 @@ def merge_functional_properties(nucleus_df, functional, use_directions=False):
 	"""
 	Merges nucleus data with functional properties
 
-	Args:
-	    - nucleus_df: DataFrame with nucleus information
-	    - functional: DataFrame with functional properties
-	    - use_directions: Whether to use directions for angle calculations (default: False)
+	Parameters:
+	------------
+	    nucleus_df: DataFrame with nucleus information
+	    functional: DataFrame with functional properties
+	    use_directions: Whether to use directions for angle calculations (default: False)
 
 	Returns:
-	    - DataFrame merged with functional properties
+	--------
+	    DataFrame merged with functional properties
 	"""
+
+	#Check data validity
 	if nucleus_df.empty or functional.empty:
-		print('Warning: Empty dataframe provided to merge_functional_properties')
-		return nucleus_df
+		raise ValueError('Warning: Empty dataframe provided to merge_functional_properties')
 
 	# Take all scans/sessions for each target_id, then average over them.
 	# For the angles we need to use the circmean, so employ apply + a lambda function that returns the average of each thing separately
@@ -129,21 +161,30 @@ def transform_positions(nucleus_df):
 	"""
 	Transforms nuclei positions from voxels to μm
 
-	Returns:
-	    DataFrame with the transformed positions
-	"""
-	if nucleus_df.empty:
-		print('Warning: Empty dataframe provided to transform_positions')
-		return nucleus_df
+	Parameters:
+	------------
+	    nucleus_df: DataFrame with nucleus information
 
+	Returns:
+	--------
+	    Same DataFrame with the transformed positions
+	
+	"""
+
+	if nucleus_df.empty:
+		raise ValueError('Warning: Empty dataframe provided to transform_positions')
+
+	#Initialize the positions
 	transformed_positions = np.empty((len(nucleus_df), 3))
 
+	#PErform the transformation iterating over the table
 	k = 0
 	for k, (x, y, z) in enumerate(tqdm(nucleus_df[['pt_position_x', 'pt_position_y', 'pt_position_z']].values, desc='Transform positions')):
 		position = np.array([x, y, z])
 		transformed = minnie_ds.transform_vx.apply(position)
 		transformed_positions[k, :] = transformed
 
+	#Set the new results and return
 	nucleus_df['pt_position_x'] = transformed_positions[:, 0]
 	nucleus_df['pt_position_y'] = transformed_positions[:, 1]
 	nucleus_df['pt_position_z'] = transformed_positions[:, 2]
@@ -151,7 +192,6 @@ def transform_positions(nucleus_df):
 	return nucleus_df
 
 
-## Adding layer segmentation and assegnations
 LAYER_CELL_TYPES = {
 	'L1': ['NGC', 'BPC', 'MC', 'BC'],
 	'L2/3': ['23P'],
@@ -160,8 +200,10 @@ LAYER_CELL_TYPES = {
 	'L6': ['6P-IT', '6P-CT'],
 	'WM': ['Oligo', 'OPC', 'Pericyte'],
 }
+"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
 
 LAYER_ORDER = ['L1', 'L2/3', 'L4', 'L5', 'L6', 'WM']
+"""Names of the layers."""
 
 
 def divide_volume_into_segments(cells_df, segment_size=10.0):
@@ -169,15 +211,18 @@ def divide_volume_into_segments(cells_df, segment_size=10.0):
 	Divide the volume into segments along the y-axis.
 
 	Parameters:
-	    cells_df (pd.DataFrame): DataFrame with cell information
-	    segment_size (float): Size of each segment in micrometers
+	-----------
+	    cells_df: DataFrame with cell information
+	    segment_size (optioanl) Size of each segment in micrometers. Defaults to 10.0
 
 	Returns:
-	    pd.DataFrame: Segmented layer information
+	--------
+	    A DataFrame with the segmented layer information
 	"""
+
+	#Data validity
 	if cells_df.empty:
-		print('Warning: Empty dataframe provided to divide_volume_into_segments')
-		return pd.DataFrame()
+		raise ValueError('Warning: Empty dataframe provided to divide_volume_into_segments')
 
 	# Calculate the number of segments
 	y_min, y_max = cells_df['pt_position_y'].min(), cells_df['pt_position_y'].max()
@@ -246,11 +291,14 @@ def enforce_layer_order(segments_df):
 	Enforce correct anatomical order of layers.
 
 	Parameters:
-	    segments_df (pd.DataFrame): DataFrame of segments
+	-------------
+	    segments_df: DataFrame containing the segments, as generated by e.g. `divide_volume_into_segments.` 
 
 	Returns:
-	    pd.DataFrame: Corrected segments DataFrame
+	--------
+		Corrected segments DataFrame
 	"""
+
 	if segments_df.empty:
 		return segments_df
 
@@ -291,18 +339,15 @@ def merge_segments_by_layer(segments_df):
 	"""
 	Merge segments that belong to the same layer.
 
-	Args:
+	Parameters:
 	-----	
-		segments_df : pandas.DataFrame
-			DataFrame of segments to be merged
-		dummy : pandas.DataFrame
-			DataFrame of segments to be merged
+		segments_df: DataFrame of segments to be merged
 
 	Returns:
 	--------
-		pandas.DataFrame
-			DataFrame with merged layer segments
+		DataFrame with merged layer segments
 	"""
+
 	if segments_df.empty:
 		return segments_df
 
@@ -367,12 +412,12 @@ def add_layer_info(neurons_df, segments):
 
 	Parameters:
 	-----------
-	    neurons_df: DataFrame with neuron information
+	    neurons_df: DataFrame with neuron information. Modified in-place.
 	    segments: DataFrame with layer segment information
 
 	Returns:
 	--------
-	    None: neurons_df is modified in-place
+	    None 
 	"""
 	if neurons_df.empty or segments.empty:
 		print('Warning: Empty dataframe provided to add_layer_info')

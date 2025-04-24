@@ -9,9 +9,14 @@ def download_nucleus_data(client, path2download, tables2download):
 	Download all the nucleus tables for further processing.
 
 	Parameters:
+    -----------
 	    client: the CAVEClient used to download
 	    path2download: the location of the folder to download all this information
 	    tables2download: the list of tables to download
+    
+	Returns:
+	-------
+        None. All results are downloaded into files
 	"""
 
 	# Ensure directory exists
@@ -24,8 +29,7 @@ def download_nucleus_data(client, path2download, tables2download):
 			auxtable = pd.DataFrame(auxtable)
 			auxtable.to_csv(f'{path2download}/{table}.csv')
 		except Exception as e:
-			print(f'Error downloading table {table}: {e}')
-			raise
+			raise RuntimeError(f'Error downloading table {table}: {e}')
 
 
 def connectome_constructor(
@@ -34,15 +38,25 @@ def connectome_constructor(
 	"""
 	Function to construct the connectome subset for the neurons specified in the presynaptic_set and postsynaptic_set.
 
-	Args:
-	client: CAVEclient needed to access MICrONS connectomics data
-	presynaptic_set: 1-d array of non repeated root_ids of presynaptic neurons for which to extract postsynaptoc connections in postynaptic_set
-	postsynaptic_set: 1-d array of non repeated root_ids of postsynaptic neurons for which to extract presynaptic connections in presynaptic_set
-	neurs_per_steps: number of postsynaptic neurons for which to recover presynaptic connectivity per single call to the connectomics
-	    database. Since the connectomics database has a limit on the number of connections you can query at once
-	    this iterative method optimises querying multiple neurons at once, as opposed to each single neuron individually,
-	    while also preventing the queries from crashing. I have tested that for a presynaptic set of around 8000 neurons
-	    you can reliably extract the connectivity for around 500 postsynaptic neurons at a time.
+	Parameters:
+    ------------
+        client: CAVEclient needed to access MICrONS connectomics data
+        presynaptic_set: 1-d array of non repeated root_ids of presynaptic neurons for which to extract postsynaptoc connections in postynaptic_set
+        postsynaptic_set: 1-d array of non repeated root_ids of postsynaptic neurons for which to extract presynaptic connections in presynaptic_set
+        neurs_per_steps: optional, defaults to 500. Number of postsynaptic neurons for which to recover presynaptic connectivity per single call to the connectomics
+            database. Since the connectomics database has a limit on the number of connections you can query at once
+            this iterative method optimises querying multiple neurons at once, as opposed to each single neuron individually,
+            while also preventing the queries from crashing. I have tested that for a presynaptic set of around 8000 neurons
+            you can reliably extract the connectivity for around 500 postsynaptic neurons at a time.
+        start_index: optional, defaults to 0. If previous download was interrupted, one can manually set the index of the last file downloaded to continue
+            from that point on. For any fresh download it should be kept 0.
+        max_retries: optional, defaults to 10. The number of times to retry if the server is not responding before giving up.
+        drop_synapses_duplicates: optional, defaults to True. If true, it merges all the synapses between neuron i-th and j-th to a single connection in which
+            the synapse_size is the total sum of all synapse sizes between those two elements.
+
+	Returns:
+	-------
+        None. All results are downloaded into files
 	"""
 
 	# Ensure directory exists
@@ -116,28 +130,45 @@ def connectome_constructor(
 
 
 def time_format(seconds):
-	if seconds > 3600 * 24:
-		days = int(seconds // (24 * 3600))
-		hours = int((seconds - days * 24 * 3600) // 3600)
-		return f'{days} days, {hours}h'
-	elif seconds > 3600:
-		hours = int(seconds // 3600)
-		minutes = int((seconds - hours * 3600) // 60)
-		return f'{hours}h, {minutes}min'
-	elif seconds > 60:
-		minutes = int(seconds // 60)
-		rem_sec = int((seconds - 60 * minutes))
-		return f'{minutes}min {rem_sec}s'
-	else:
-		return f'{seconds:.0f}s'
+    """
+	A function aimed to format the remaining download seconds nicely.
+
+	Parameters:
+	-----------
+        seconds: remaining download time in seconds
+	
+	Returns:
+	--------
+        String with a well-formated time
+    """
+
+    if seconds > 3600 * 24:
+        days = int(seconds // (24 * 3600))
+        hours = int((seconds - days * 24 * 3600) // 3600)
+        return f'{days} days, {hours}h'
+    elif seconds > 3600:
+        hours = int(seconds // 3600)
+        minutes = int((seconds - hours * 3600) // 60)
+        return f'{hours}h, {minutes}min'
+    elif seconds > 60:
+        minutes = int(seconds // 60)
+        rem_sec = int((seconds - 60 * minutes))
+        return f'{minutes}min {rem_sec}s'
+    else:
+        return f'{seconds:.0f}s'
 
 
 def merge_connection_tables(savefolder):
 	"""
 	Merge connection tables that were saved by connectome_constructor.
 
-	Args:
+	Parameters:
+    ------------
 	    savefolder: The folder containing the connection tables
+
+	Returns:
+	---------
+        Nothing. Downloads all necessary information to files.
 	"""
 	# Check if the synapses folder exists
 	synapses_path = f'{savefolder}/synapses/'
