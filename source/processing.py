@@ -157,39 +157,46 @@ def merge_functional_properties(nucleus_df, functional, use_directions=False):
 	return merged
 
 
-def transform_positions(nucleus_df):
-	"""
-	Transforms nuclei positions from voxels to μm
-
-	Parameters:
-	------------
-	    nucleus_df: DataFrame with nucleus information
-
-	Returns:
-	--------
-	    Same DataFrame with the transformed positions
-	
-	"""
-
-	if nucleus_df.empty:
-		raise ValueError('Warning: Empty dataframe provided to transform_positions')
-
-	#Initialize the positions
-	transformed_positions = np.empty((len(nucleus_df), 3))
-
-	#PErform the transformation iterating over the table
-	k = 0
-	for k, (x, y, z) in enumerate(tqdm(nucleus_df[['pt_position_x', 'pt_position_y', 'pt_position_z']].values, desc='Transform positions')):
-		position = np.array([x, y, z])
-		transformed = minnie_ds.transform_vx.apply(position)
-		transformed_positions[k, :] = transformed
-
-	#Set the new results and return
-	nucleus_df['pt_position_x'] = transformed_positions[:, 0]
-	nucleus_df['pt_position_y'] = transformed_positions[:, 1]
-	nucleus_df['pt_position_z'] = transformed_positions[:, 2]
-
-	return nucleus_df
+def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col='pt_position_z'):
+    """
+    Transforms positions from voxels to μm
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame with position columns to transform
+    x_col : str, optional
+        Name of the x-coordinate column (default: 'pt_position_x')
+    y_col : str, optional
+        Name of the y-coordinate column (default: 'pt_position_y')
+    z_col : str, optional
+        Name of the z-coordinate column (default: 'pt_position_z')
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame with transformed positions
+    """
+    if df.empty:
+        print("Warning: Empty dataframe provided to transform_positions")
+        return df
+    
+    # Check if required columns exist
+    if not all(col in df.columns for col in [x_col, y_col, z_col]):
+        raise ValueError(f"Required columns {x_col}, {y_col}, {z_col} not found in the dataframe")
+    
+    transformed_positions = np.empty((len(df), 3)) 
+    
+    for k, (x, y, z) in enumerate(tqdm(df[[x_col, y_col, z_col]].values, desc="Transform positions")):
+        position = np.array([x, y, z])
+        transformed = minnie_ds.transform_vx.apply(position)
+        transformed_positions[k, :] = transformed
+        
+    df[x_col] = transformed_positions[:, 0]
+    df[y_col] = transformed_positions[:, 1]
+    df[z_col] = transformed_positions[:, 2]
+    
+    return df
 
 
 LAYER_CELL_TYPES = {
