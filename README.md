@@ -8,9 +8,9 @@ This project provides tools for working with the MICrONS Minnie65 dataset, allow
 - Segment the brain volume into cortical layers
 
 # Structure
-- downloader.py: Functions for downloading data from the MICrONS database
-- processing.py: Functions for processing, merging, and analyzing neural data
-- mic_datacleaner.py: Wrapper class that simplifies the use of download and processing functions
+- `mic_datacleaner`.py: Wrapper class that simplifies the use of download and processing functions.
+- `downloader.py`: Functions for downloading data from the MICrONS database
+- `processing.py`: Functions for processing, merging, and analyzing neural data
 
 # Requirements 
 
@@ -20,7 +20,6 @@ This project provides tools for working with the MICrONS Minnie65 dataset, allow
 - Pandas
 - Numpy
 - Scipy
-- H5Py
 - TQDM
 - Standard transform for coordinate change (MICrONS ecosystem)
 
@@ -34,6 +33,7 @@ This project provides tools for working with the MICrONS Minnie65 dataset, allow
 ## How to use 
 
 (To be written)
+See the `tutorial` notebook.
 
 ## Generating the docs
 

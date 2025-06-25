@@ -30,11 +30,16 @@ class MicronsDataCleaner:
                          "proofreading_status_and_strategy"] 
 
 
-    def __init__(self):
+    def __init__(self, datadir="data"):
         """
         Initialize the class and makes sure subfolders to download exist.
+
+        Parameters:
+        -----------
+            datadir: string, optional. Default to 'data'. Points to the folder where information will be downloaded.
         """
 
+        self.datadir = datadir
         self.data_storage = f"{self.homedir}/{self.datadir}"
         # Ensure directories exist
         os.makedirs(self.data_storage, exist_ok=True)
