@@ -75,7 +75,7 @@ def merge_brain_area(nucleus_df, areas):
 	)
 
 
-def merge_proofreading_status(nucleus_df, proofreading):
+def merge_proofreading_status(nucleus_df, proofreading, version):
 	"""
 	Merges nucleus data with proofreading status information
 
@@ -96,6 +96,13 @@ def merge_proofreading_status(nucleus_df, proofreading):
 
 	#Perform a merge of both tables and keep only the desired columns
 	merged = nucleus_df.merge(proofreading, left_on=['pt_root_id'], right_on=['pt_root_id'], how='left')
+	print(proofreading.columns)
+
+	name_axon = "strategy_axon" if version > 700 else "status_axon"
+	name_dend = "strategy_dendrite" if version > 700 else "status_dendrite"
+
+	print(name_dend)
+
 	merged = merged[
 		[
 			'pt_root_id',
@@ -106,14 +113,13 @@ def merge_proofreading_status(nucleus_df, proofreading):
 			'classification_system',
 			'cell_type',
 			'brain_area',
-			'strategy_dendrite',
-			'strategy_axon',
+			name_dend, name_axon
 		]
 	]
 
 	# Tag the ones that have not been proofread
-	merged.loc[merged['strategy_dendrite'].isna(), 'strategy_dendrite'] = 'none'
-	merged.loc[merged['strategy_axon'].isna(), 'strategy_axon'] = 'none'
+	merged.loc[merged[name_dend].isna(), name_dend] = 'none'
+	merged.loc[merged[name_axon].isna(), name_axon] = 'none'
 
 	#Return the result 
 	return merged.rename(columns={'id_x': 'id', 'pt_position_x_x': 'pt_position_x', 'pt_position_y_x': 'pt_position_y', 'pt_position_z_x': 'pt_position_z'})
@@ -139,7 +145,7 @@ def merge_functional_properties(nucleus_df, functional, use_directions=False):
 		raise ValueError('Warning: Empty dataframe provided to merge_functional_properties')
 
 	# Take all scans/sessions for each target_id, then average over them.
-	# For the angles we need to use the circmean, so employ apply + a lambda function that returns the average of each thing separately
+	# For the angles we need to use the circmean, so employ apply  a lambda function that returns the average of each thing separately
 	high_circmean = 2 * np.pi if use_directions else np.pi
 	funcmean = functional.groupby(['target_id']).apply(
 		lambda x: pd.Series(
