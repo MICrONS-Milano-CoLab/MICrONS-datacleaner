@@ -145,13 +145,14 @@ def merge_functional_properties(nucleus_df, functional, use_directions=False):
 		raise ValueError('Warning: Empty dataframe provided to merge_functional_properties')
 
 	# Take all scans/sessions for each target_id, then average over them.
-	# For the angles we need to use the circmean, so employ apply  a lambda function that returns the average of each thing separately
-	high_circmean = 2 * np.pi if use_directions else np.pi
+	# For the angles we need to use the circmean, so employ apply plus a lambda function that returns the average of each thing separately
 	funcmean = functional.groupby(['target_id']).apply(
 		lambda x: pd.Series(
 			{
-				'pref_ori': circmean(x['pref_ori'], low=0, high=high_circmean),
+				'pref_ori': circmean(x['pref_ori'], low=0, high=np.pi),
+				'pref_dir': circmean(x['pref_ori'], low=0, high=2*np.pi),
 				'gOSI': x['gOSI'].mean(),
+				'gDSI': x['gDSI'].mean()
 			}
 		)
 	)

@@ -139,11 +139,11 @@ class MicronsDataCleaner:
                                    neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
         return
 
-    def merge_synapses(self):
+    def merge_synapses(self, syn_table_name):
         """
         Merges all the batches of the downloaded synapses. 
         """
-        down.merge_connection_tables(f"{self.data_storage}/raw")
+        down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
         return
 
     def process_nucleus_data(self):

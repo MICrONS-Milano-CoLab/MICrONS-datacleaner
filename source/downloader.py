@@ -73,12 +73,17 @@ def connectome_constructor(
 
 	# Preset the dictionary so we do not build a large object every time
 	neurons_to_download = {'pre_pt_root_id': presynaptic_set}
+
+	# If we are not getting individual synapses, the best thing we can do is to not ask for positions, which is very heavy
+	if drop_synapses_duplicates:
+		cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size']
+	else:
+		cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size', 'ctr_pt_position']
 	part = start_index
 	for i in range(start_index * neurs_per_steps, postsynaptic_set.size, neurs_per_steps):
 		# Inform about our progress
-		print(f'Postsynaptic neurons queried so far: {i}...')
+		print(f'Postsynaptic neurons queried so far: {i}...', flush=True)
 
-		cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size', 'ctr_pt_position']
 		# Try to query the API several times
 		success = False  # Flag to track if current batch succeeded
 		retry = 0
@@ -109,7 +114,7 @@ def connectome_constructor(
 				time_per_neuron = elapsed_time / neurons_done
 				neurons_2_do = postsynaptic_set.size - neurons_done
 				remaining_time = time_format(neurons_2_do * time_per_neuron)
-				print(f'Estimated remaining time: {remaining_time}')
+				print(f'Estimated remaining time: {remaining_time}', flush=True)
 				success = True  # Mark batch as successful
 			# If it a problem of the client, just retry again after a few seconds
 			except requests.HTTPError as excep:
@@ -158,17 +163,18 @@ def time_format(seconds):
         return f'{seconds:.0f}s'
 
 
-def merge_connection_tables(savefolder):
+def merge_connection_tables(savefolder, filename):
 	"""
 	Merge connection tables that were saved by connectome_constructor.
 
 	Parameters:
     ------------
 	    savefolder: The folder containing the connection tables
+	    filename: Name of the output merged file 
 
 	Returns:
 	---------
-        Nothing. Downloads all necessary information to files.
+        Nothing. Merges everything to a file 
 	"""
 	# Check if the synapses folder exists
 	synapses_path = f'{savefolder}/synapses/'
@@ -196,7 +202,7 @@ def merge_connection_tables(savefolder):
 	for file_path in connection_files[1:]:
 		table = pd.concat([table, pd.read_csv(file_path)])
 
-	output_path = f'{savefolder}/synapses.csv'
+	output_path = f'{savefolder}/{filename}.csv'
 	table.to_csv(output_path)
 	print(f'Merged {len(connection_files)} tables into {output_path}')
 	return

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MICrONS Data Cleaner"
+description = "Provides common functions to download and process data from the mm3 data."
+keywords = ["neuroscience"]
+classifiers = ["Development Status :: 2 - Pre-Alpha,
+ "Intended Audience :: Science/Research",
+ "Operating System :: OS Independent",
+ "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.7"
+dynamic = ["version", "readme"]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+version = {attr = "source.__version__"}
