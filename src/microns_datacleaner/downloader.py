@@ -23,11 +23,10 @@ def download_nucleus_data(client, path2download, tables2download):
 	os.makedirs(path2download, exist_ok=True)
 
 	for table in tables2download:
-		print(table)
 		try:
 			auxtable = client.materialize.query_table(table, split_positions=True)
 			auxtable = pd.DataFrame(auxtable)
-			auxtable.to_csv(f'{path2download}/{table}.csv')
+			auxtable.to_csv(f'{path2download}/{table}.csv', index=False)
 		except Exception as e:
 			raise RuntimeError(f'Error downloading table {table}: {e}')
 
@@ -203,6 +202,6 @@ def merge_connection_tables(savefolder, filename):
 		table = pd.concat([table, pd.read_csv(file_path)])
 
 	output_path = f'{savefolder}/{filename}.csv'
-	table.to_csv(output_path)
+	table.to_csv(output_path, index=False)
 	print(f'Merged {len(connection_files)} tables into {output_path}')
 	return
