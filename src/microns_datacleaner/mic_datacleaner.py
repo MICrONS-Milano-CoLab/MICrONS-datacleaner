@@ -206,14 +206,16 @@ class MicronsDataCleaner:
         down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
         return
 
-    def process_nucleus_data(self, with_functional=True):
+    def process_nucleus_data(self, with_functional='best_only'):
         """
         Processes all the downloaded nucleus data to generate a unified units_table. This includes information on 
         brain area, functional data, proofreading, as well as a layer segmentation.
 
         Parameters:
         -----------
-            None
+            with_functional: string. If 'none', no functional data is added to the table. 
+            If 'all', the functional data is added, conserving units with multiple scans. If 'best_only' (the default) 
+            only the scan with the highest performance of the Digital Twin is considered.  
         
         Returns:
         --------
@@ -229,7 +231,7 @@ class MicronsDataCleaner:
 
             if self.tables['brain_areas'] is not None: 
                 areas     = pd.read_csv(f"{self.data_storage}/raw/{self.tables['brain_areas']}.csv")
-            if self.tables['func_props'] is not None and with_functional: 
+            if self.tables['func_props'] is not None and with_functional in ['best_only', 'all']: 
                 funcprops = pd.read_csv(f"{self.data_storage}/raw/{self.tables['func_props']}.csv")
 
             #Call all the merge functions. First, cell types
@@ -239,20 +241,10 @@ class MicronsDataCleaner:
             if self.tables['brain_areas'] is not None: 
                 nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
             else:
-                #TODO predict brain area using a classifier
                 nucleus_merged['brain_area'] = 'not_available'
 
             #Proofreading info
             nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread, self.version)
-
-            #Finally, functional properties. In some versions, these need to be added from the functional data 
-            if self.tables['func_props'] is not None and with_functional: 
-                nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops)
-            #else:
-                #TODO estimate from functional data
-                #nucleus_merged['pref_ori'] = 0 
-                #nucleus_merged['gOSI'] = 0. 
-
 
             #Get the correct positions
             nucleus_merged = proc.transform_positions(nucleus_merged)
@@ -263,14 +255,23 @@ class MicronsDataCleaner:
 
             proc.add_layer_info(nucleus_merged, segments)
 
-            #Clean the resulting table by eliminating multisoma objects
+            #Clean the resulting table by eliminating all multisoma objects. 
             nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
+            nucleus_merged = nucleus_merged.drop_duplicates(subset='pt_root_id', keep=False)
 
-            #Count the number of each pt_root_id. Then use the id column as a placeholder to add 
-            #that count to each row of the table. Since root_id_counts is like another column
-            #of the table, use it to filter out multisomas.
-            root_id_counts = nucleus_merged.groupby(['pt_root_id'])['id'].transform('count')
-            nucleus_merged = nucleus_merged[root_id_counts == 1] 
+
+            #Finally, functional properties. In some versions, these need to be added from the functional data 
+            if self.tables['func_props'] is not None and with_functional in ['best_only', 'all']: 
+                best_only = with_functional == 'best_only'
+                nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops, best_only=best_only)
+            #else:
+                #TODO estimate from functional data
+                #nucleus_merged['pref_ori'] = 0 
+                #nucleus_merged['gOSI'] = 0. 
+
+
+
+            nucleus_merged = nucleus_merged.rename(columns = {'id' : 'nucleus_id'}) 
 
             return nucleus_merged, segments
 

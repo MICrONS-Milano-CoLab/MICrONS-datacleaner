@@ -125,7 +125,7 @@ def merge_proofreading_status(nucleus_df, proofreading, version):
 	return merged.rename(columns={'id_x': 'id', 'pt_position_x_x': 'pt_position_x', 'pt_position_y_x': 'pt_position_y', 'pt_position_z_x': 'pt_position_z'})
 
 
-def merge_functional_properties(nucleus_df, functional, use_directions=False):
+def merge_functional_properties(nucleus_df, functional, best_only=True):
 	"""
 	Merges nucleus data with functional properties
 
@@ -144,24 +144,24 @@ def merge_functional_properties(nucleus_df, functional, use_directions=False):
 	if nucleus_df.empty or functional.empty:
 		raise ValueError('Warning: Empty dataframe provided to merge_functional_properties')
 
-	# Take all scans/sessions for each target_id, then average over them.
-	# For the angles we need to use the circmean, so employ apply plus a lambda function that returns the average of each thing separately
-	funcmean = functional.groupby(['target_id']).apply(
-		lambda x: pd.Series(
-			{
-				'pref_ori': circmean(x['pref_ori'], low=0, high=np.pi),
-				'pref_dir': circmean(x['pref_ori'], low=0, high=2*np.pi),
-				'gOSI': x['gOSI'].mean(),
-				'gDSI': x['gDSI'].mean()
-			}
-		)
-	)
+	if best_only:
+		functional = functional.sort_values(by='cc_abs', ascending=False)
+		functional = functional.drop_duplicates(subset='target_id', keep='first')
+		functional = functional[['target_id', 'pt_root_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
+	else:
+		functional = functional[['target_id', 'pt_root_id', 'session', 'scan_idx', 'unit_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
+		functional = functional.rename(columns = {'unit_id' : 'functional_unit_id'}) 
+
+	#Needed just to filter potential pt root = 0, then we can drop
+	functional = functional[functional['pt_root_id'] != 0]
+	functional = functional.drop(columns=['pt_root_id'])
 
 	# Then proceed on the merge. In this case there is no common columns so filtering and renaming the result
 	# after the merge is not necessary anymore
-	merged = nucleus_df.merge(funcmean, left_on=['id'], right_on=['target_id'], how='left')
+	merged = nucleus_df.merge(functional, left_on=['id'], right_on=['target_id'], how='left')
 
-	return merged
+	#We do not need the target_id, because we have the id
+	return merged.drop(columns=['target_id'])
 
 
 def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col='pt_position_z'):

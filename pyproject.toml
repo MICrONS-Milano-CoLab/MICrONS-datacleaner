@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "Microns-DataCleaner"
-version = "0.1.1"
+version = "0.1.2"
 description = "Provides common functions to download and process data from the mm3 data."
 keywords = ["neuroscience"]
 classifiers = ["Development Status :: 2 - Pre-Alpha",
