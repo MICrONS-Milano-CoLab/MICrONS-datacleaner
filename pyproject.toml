@@ -13,9 +13,18 @@ classifiers = ["Development Status :: 2 - Pre-Alpha",
  "Operating System :: OS Independent",
  "Programming Language :: Python :: 3",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 packages = [{include = ""}]
 dynamic = ["version", "readme"]
 authors = [{name = "Victor Buendia", email = "victor.buendia@unibocconi.it"}, {name = "Margherita Premi", email = "margherita.premi@gmail.com"}]
 maintainers = [{name = "All contributors"}]
 readme = "README.md"
+
+dependencies = [
+    "numpy (>=1.26.0)",
+    "standard_transform (>=1.4.0)",
+    "pandas (>= 2.2.3)",
+    "caveclient (>=7.6.2)",
+    "tqdm (>=4.66.5)", 
+    "scipy (>=1.14.1)"
+]

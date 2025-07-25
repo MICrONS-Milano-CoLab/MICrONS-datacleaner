@@ -7,9 +7,9 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def download_nucleus_data(client, path2download, tables2download):
-    """
-	Download all the nucleus tables for further processing.
+def download_tables(client, path2download, tables2download):
+	"""
+	Download all the indicated tables for further processing.
 
 	Parameters:
     -----------
@@ -25,22 +25,23 @@ def download_nucleus_data(client, path2download, tables2download):
     # Ensure directory exists
     os.makedirs(path2download, exist_ok=True)
 
-    for table in tables2download:
-        try:
-            logging.info(f"Downloading table: {table}")
-            auxtable = client.materialize.query_table(table, split_positions=True)
-            auxtable = pd.DataFrame(auxtable)
-            auxtable.to_csv(f'{path2download}/{table}.csv', index=False)
-            logging.info(f"Successfully downloaded and saved {table}.csv")
-        except Exception as e:
-            logging.error(f"Error downloading table {table}: {e}")
-            raise RuntimeError(f'Error downloading table {table}: {e}')
-    logging.info("Finished downloading all nucleus data.")
+	# Ensure directory exists
+	os.makedirs(path2download, exist_ok=True)
+
+	#Download all the tables in the list
+	for table in tables2download:
+		try:
+			auxtable = client.materialize.query_table(table, split_positions=True)
+			auxtable = pd.DataFrame(auxtable)
+			auxtable.to_csv(f'{path2download}/{table}.csv', index=False)
+		except Exception as e:
+			raise RuntimeError(f'Error downloading table {table}: {e}')
+
 
 def connectome_constructor(
-    client, presynaptic_set, postsynaptic_set, savefolder, neurs_per_steps=500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=True
+	client, presynaptic_set, postsynaptic_set, savefolder, neurs_per_steps=500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=True
 ):
-    """
+	"""
 	Function to construct the connectome subset for the neurons specified in the presynaptic_set and postsynaptic_set.
 
 	Parameters:
@@ -63,76 +64,78 @@ def connectome_constructor(
 	-------
         None. All results are downloaded into files
 	"""
-    logging.info(f"Starting connectome construction. Saving to: {savefolder}")
-    # Ensure directory exists
-    os.makedirs(savefolder, exist_ok=True)
+	logging.info(f"Starting connectome construction. Saving to: {savefolder}")
+	# Ensure directory exists
+	os.makedirs(savefolder, exist_ok=True)
 
 	# We are doing the neurons in packages of neurs_per_steps. If neurs_per_steps is not
 	# a divisor of the postsynaptic_set the last iteration has less neurons
-    n_before_last = (postsynaptic_set.size // neurs_per_steps) * neurs_per_steps
-    time_0 = time.time()
-    synapse_table = client.info.get_datastack_info()['synapse_table']
-    
+	n_before_last = (postsynaptic_set.size // neurs_per_steps) * neurs_per_steps
+
+	# Time before starting the party
+	time_0 = time.time()
+
+	synapse_table = client.info.get_datastack_info()['synapse_table']
+
 	# Preset the dictionary so we do not build a large object every time
-    neurons_to_download = {'pre_pt_root_id': presynaptic_set}
+	neurons_to_download = {'pre_pt_root_id': presynaptic_set}
 
 	# If we are not getting individual synapses, the best thing we can do is to not ask for positions, which is very heavy
-    if drop_synapses_duplicates:
-        cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size']
-        logging.info("Dropping synapse duplicates and excluding position data for lighter queries.")
-    else:
-        cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size', 'ctr_pt_position']
-        logging.info("Including synapse position data.")
-
-    part = start_index
-    for i in range(start_index * neurs_per_steps, postsynaptic_set.size, neurs_per_steps):
-        logging.info(f'Postsynaptic neurons queried so far: {i}...')
+	if drop_synapses_duplicates:
+		cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size']
+		logging.info("Dropping synapse duplicates and excluding position data for lighter queries.")	
+	else:
+		cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size', 'ctr_pt_position']
+	part = start_index
+	for i in range(start_index * neurs_per_steps, postsynaptic_set.size, neurs_per_steps):
+		# Inform about our progress
+		logging.info(f'Postsynaptic neurons queried so far: {i}...')
 
 		# Try to query the API several times
-        success = False
-        retry = 0
-        while retry < max_retries and not success:
-            try:
-                # Get the postids that we will be grabbing in this query. We will get neurs_per_step of them
-                post_ids = postsynaptic_set[i : i + neurs_per_steps] if i < n_before_last else postsynaptic_set[i:]
-                neurons_to_download['post_pt_root_id'] = post_ids
-
-                logging.info(f"Querying batch starting at index {i} with {len(post_ids)} neurons.")
-                sub_syn_df = client.materialize.query_table(
-                    synapse_table, filter_in_dict=neurons_to_download, select_columns=cols_2_download, split_positions=True
-                )
+		success = False  # Flag to track if current batch succeeded
+		retry = 0
+		while retry < max_retries and not success:
+			try:
+				# Get the postids that we will be grabbing in this query. We will get neurs_per_step of them
+				post_ids = postsynaptic_set[i : i + neurs_per_steps] if i < n_before_last else postsynaptic_set[i:]
+				neurons_to_download['post_pt_root_id'] = post_ids
+				logging.info(f"Querying batch starting at index {i} with {len(post_ids)} neurons.")
+				# Query the table
+				sub_syn_df = client.materialize.query_table(
+					synapse_table, filter_in_dict=neurons_to_download, select_columns=cols_2_download, split_positions=True
+				)
 
 				# Sum all repeated synapses. The last reset_index is because groupby would otherwise create a
 				# multiindex dataframe and we want to have pre_root and post_root as columns
-                if drop_synapses_duplicates:
-                    sub_syn_df = sub_syn_df.groupby(['pre_pt_root_id', 'post_pt_root_id']).sum().reset_index()
+				if drop_synapses_duplicates:
+					sub_syn_df = sub_syn_df.groupby(['pre_pt_root_id', 'post_pt_root_id']).sum().reset_index()
 
-                sub_syn_df.to_csv(f'{savefolder}/connections_table_{part}.csv', index=False)
-                logging.info(f"Successfully saved connections_table_{part}.csv")
-                part += 1
+				sub_syn_df.to_csv(f'{savefolder}/connections_table_{part}.csv', index=False)
+				logging.info(f"Successfully saved connections_table_{part}.csv")				
+				part += 1
 
 				# Measure how much time in total our program did run
-                elapsed_time = time.time() - time_0
-                neurons_done = min(i + neurs_per_steps, postsynaptic_set.size)
-                time_per_neuron = elapsed_time / neurons_done
-                neurons_2_do = postsynaptic_set.size - neurons_done
-                remaining_time = time_format(neurons_2_do * time_per_neuron)
-                logging.info(f'Estimated remaining time: {remaining_time}')
-                success = True
+				elapsed_time = time.time() - time_0
+				neurons_done = min(i + neurs_per_steps, postsynaptic_set.size)
+				time_per_neuron = elapsed_time / neurons_done
+				neurons_2_do = postsynaptic_set.size - neurons_done
+				remaining_time = time_format(neurons_2_do * time_per_neuron)
+				logging.info(f'Estimated remaining time: {remaining_time}')
+				success = True
 
-            except requests.HTTPError as excep:
-                logging.warning(f'API error on trial {retry + 1}. Retrying in {delay} seconds... Details: {excep}')
-                time.sleep(delay)
-                retry += 1
+			except requests.HTTPError as excep:
+				logging.warning(f'API error on trial {retry + 1}. Retrying in {delay} seconds... Details: {excep}')
+				time.sleep(delay)
+				retry += 1
 
-            except Exception as excep:
-                logging.error(f"An unexpected error occurred: {excep}")
-                raise excep
+			except Exception as excep:
+				logging.error(f"An unexpected error occurred: {excep}")
+			raise excep
 
-        if not success:
-            logging.error('Exceeded the max retries when trying to get synaptic connectivity. Aborting.')
-            raise TimeoutError('Exceeded the max_tries when trying to get synaptic connectivity')
-    logging.info("Connectome construction finished successfully.")
+	if not success:
+		logging.error('Exceeded the max retries when trying to get synaptic connectivity. Aborting.')
+		raise TimeoutError('Exceeded the max_tries when trying to get synaptic connectivity')
+	logging.info("Connectome construction finished successfully.")
 
 def time_format(seconds):
     """
@@ -146,6 +149,7 @@ def time_format(seconds):
 	--------
         String with a well-formated time
     """
+
     if seconds > 3600 * 24:
         days = int(seconds // (24 * 3600))
         hours = int((seconds - days * 24 * 3600) // 3600)
@@ -161,8 +165,9 @@ def time_format(seconds):
     else:
         return f'{seconds:.0f}s'
 
+
 def merge_connection_tables(savefolder, filename):
-    """
+	"""
 	Merge connection tables that were saved by connectome_constructor.
 
 	Parameters:
@@ -174,37 +179,36 @@ def merge_connection_tables(savefolder, filename):
 	---------
         Nothing. Merges everything to a file 
 	"""
-    
-    logging.info(f"Starting to merge connection tables into {filename}.csv")
-    synapses_path = f'{savefolder}/synapses/'
-    if not os.path.exists(synapses_path):
-        if os.path.exists(savefolder) and any('connections_table_' in f for f in os.listdir(savefolder)):
-            synapses_path = savefolder
-            logging.info(f"Found connection tables in the root save folder: {savefolder}")
-        else:
-            logging.error(f'Could not find synapses directory at {synapses_path} or connection tables in the root.')
-            raise FileNotFoundError(f'Could not find synapses directory at {synapses_path}')
+	# Check if the synapses folder exists
+	logging.info(f"Starting to merge connection tables into {filename}.csv")
+	synapses_path = f'{savefolder}/synapses/'
+	if not os.path.exists(synapses_path):
+		if os.path.exists(savefolder) and any('connections_table_' in f for f in os.listdir(savefolder)):
+			synapses_path = savefolder
+		else:
+			raise FileNotFoundError(f'Could not find synapses directory at {synapses_path}')
 
 	# Count the number of tables to merge, by checking all files in the correct folder
-    connection_files = []
-    for file in os.listdir(synapses_path):
-        file_path = os.path.join(synapses_path, file)
-        if os.path.isfile(file_path) and 'connections_table_' in file:
-            connection_files.append(file_path)
+	connection_files = []
+	for file in os.listdir(synapses_path):
+		file_path = os.path.join(synapses_path, file)
+		if os.path.isfile(file_path) and 'connections_table_' in file:
+			connection_files.append(file_path)
 
-    if not connection_files:
-        logging.warning('No connection tables found to merge.')
-        return
+	if not connection_files:
+		logging.warning('No connection tables found to merge.')
+		return
 
     logging.info(f"Found {len(connection_files)} connection tables to merge.")
     
 	# Merge all of them
-    first_file = connection_files[0]
-    table = pd.read_csv(first_file)
+	first_file = connection_files[0]
+	table = pd.read_csv(first_file)
 
-    for file_path in connection_files[1:]:
-        table = pd.concat([table, pd.read_csv(file_path)])
+	for file_path in connection_files[1:]:
+		table = pd.concat([table, pd.read_csv(file_path)])
 
-    output_path = f'{savefolder}/{filename}.csv'
-    table.to_csv(output_path, index=False)
-    logging.info(f'Merged {len(connection_files)} tables into {output_path}')
+	output_path = f'{savefolder}/{filename}.csv'
+	table.to_csv(output_path, index=False)
+	logging.info(f'Merged {len(connection_files)} tables into {output_path}')
+	return
