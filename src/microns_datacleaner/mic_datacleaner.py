@@ -34,7 +34,7 @@ class MicronsDataCleaner:
     version = 1300
 
 
-    def __init__(self, datadir="data", version=1300, custom_tables={}, download_policy='minimum', extra_tables=[]):
+    def __init__(self, datadir="data", version=1300, download_policy='minimum', extra_tables=[]):
         """
         Initialize the class and makes sure subfolders to download exist. Configures the tables to be downloaded (except synapses) via
         a download policy.
@@ -69,10 +69,9 @@ class MicronsDataCleaner:
         self._initialize_client(version)
 
         #Set the tables to download according to the version
-        self._configure_download_tables(version, custom_tables, download_policy, extra_tables)
-        logging.info("MicronsDataCleaner initialized successfully.")
+        self._configure_download_tables(version, download_policy, extra_tables)
 
-    def _configure_download_tables(self, version, custom_tables, download_policy, extra_tables):
+    def _configure_download_tables(self, version, download_policy, extra_tables):
         """
         Internal function that configures the tables to be downloaded according to the selected version and download policy.
         See the constructor for information on custom_tables and possible policies. This function is not intended for the user. 
@@ -88,10 +87,6 @@ class MicronsDataCleaner:
                 self.tables['brain_areas']  = "nucleus_functional_area_assignment"
                 self.tables['func_props']   = "functional_properties_v3_bcm"
                 self.tables['coreg']        = "coregistration_manual_v4"
-
-        #Override all defaults with user-provided custom tables IF they were indicated 
-        for key in custom_tables:
-            self.tables[key] = custom_tables[key]
 
         #Set the tables that we will need to download.
         match download_policy:
@@ -146,7 +141,7 @@ class MicronsDataCleaner:
 
     def download_nucleus_data(self):
         """
-        Downloads all the tables indicated in the cleaner.tables to download 
+        Downloads all the nucleus tables indicated by the download_policy when the object was created (see documentation for constructor). 
         """
 	logging.info(f"Downloading nucleus data tables: {self.tables_2_download}")
         down.download_tables(self.client,f"{self.data_storage}/raw/",  self.tables_2_download)
@@ -196,6 +191,14 @@ class MicronsDataCleaner:
     def merge_synapses(self, syn_table_name):
         """
         Merges all the batches of the downloaded synapses. 
+
+        Parameters
+        -----------
+            syn_table_name: str
+                The name of the CSV file containing resulting merged synapse table
+        Returns
+        --------
+            None.
         """
         logging.info(f"Merging synapse tables into '{syn_table_name}'.")
         down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
@@ -203,6 +206,28 @@ class MicronsDataCleaner:
         return
 
     def merge_table(self, unit_table, new_table, columns, method="nucleus_id", how='left'):
+        """
+        General function to add new columns to the unit table in a flexible way. 
+
+        Parameters
+        ----------
+            unit_table: Dataframe
+                unit table created by the Microns Datacleaner
+            table: Dataframe 
+                table from which the new columns are going to be added
+            columns: list of str 
+                the list of columns from table to add to unit_table. If None, all are selected.
+            method: str 
+                How the tables will be compared to each other. If 'nucleus_id' (default), the target_id 
+                is matched to the nucleus_id. If functional, the session, scan and unit_id are compared. 
+                If 'pt_root_id', merge by 'pt_root_id'. This last option is not adviced, unless is the only index available.
+            how: str
+                Equivalent to Panda's how argument for the merge function. Only 'inner' or 'left' are allowed, since the 
+                new columns are always added into the nucleus table.
+        Returns
+        -------
+            The unit table with the new columns added to it.
+        """
         return proc.merge_columns(unit_table, new_table, columns, method=method, how=how)
         
 
@@ -234,12 +259,12 @@ class MicronsDataCleaner:
             nucleus   = pd.read_csv(f"{self.data_storage}/raw/{self.tables['nucleus']}.csv")
             celltype  = pd.read_csv(f"{self.data_storage}/raw/{self.tables['celltype']}.csv")
             proofread = pd.read_csv(f"{self.data_storage}/raw/{self.tables['proofreading']}.csv")
-
             areas     = pd.read_csv(f"{self.data_storage}/raw/{self.tables['brain_areas']}.csv")
 
-
+            #Use a better index for the global id
             nucleus = nucleus.rename(columns={'id' : 'nucleus_id'})
 
+            #Load functional data depending on user preferences
             if functional_data in ['best_only', 'all']: 
                 funcprops = pd.read_csv(f"{self.data_storage}/raw/{self.tables['func_props']}.csv")
             elif functional_data == 'match':
@@ -274,14 +299,15 @@ class MicronsDataCleaner:
             nucleus_merged = nucleus_merged.drop_duplicates(subset='pt_root_id', keep=False)
 
 
-            #Finally, functional properties. In some versions, these need to be added from the functional data 
+            #Finally, functional properties. 
             if functional_data in ['best_only', 'all']: 
                 nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops, mode=functional_data)
+                nucleus_merged.loc[nucleus_merged['tuning_type'].isna(), 'tuning_type'] = 'not_matched'
             elif functional_data == 'match':
                 nucleus_merged = proc.merge_functional_properties(nucleus_merged, coreg, mode=functional_data)
-
-            logging.info("Nucleus data processing completed successfully.")
-            #nucleus_merged = nucleus_merged.rename(columns = {'id' : 'nucleus_id'}) 
+                nucleus_merged.loc[nucleus_merged['tuning_type'].isna(), 'tuning_type'] = 'not_matched'
+            else:
+                nucleus_merged['tuning_type'] = 'not_matched'
 
             return nucleus_merged, segments
 

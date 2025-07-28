@@ -8,6 +8,28 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(funcName)s] - %(message)s')
 
 def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='left'):
+	"""
+	General function to add new columns to the nucleus table in a flexible way. 
+
+	Parameters
+	----------
+		nucleus_df: Dataframe
+			nucleus reference table
+		table: Dataframe 
+			table from which the new columns are going to be added
+		columns: list of str 
+			the list of columns from table to add to nucleus_df. If None, all are selected.
+		method: str 
+			How the tables will be compared to each other. If 'nucleus_id' (default), the target_id 
+			is matched to the nucleus_id. If functional, the session, scan and unit_id are compared. 
+			If 'pt_root_id', merge by 'pt_root_id'. This last option is not adviced, unless is the only index available.
+		how: str
+			Equivalent to Panda's how argument for the merge function. Only 'inner' or 'left' are allowed, since the 
+			new columns are always added into the nucleus table.
+	Returns
+	-------
+		The nucleus table with the new columns added to it.
+	"""
 
 	#Things must be merged into the unit/nucleus table. Any other merge is not permitted
 	if how == 'right':
@@ -35,11 +57,11 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 		if not col in columns:
 			columns2merge.append(col)
 
-	#Merge the table tagging the columsn that are common in both tables, to drop those of the second one
+	#Merge the table tagging the columns that are common in both tables, to drop those of the second one
 	merged = nucleus_df.merge(table[columns2merge], left_on=left_col, right_on=right_col, how=how, suffixes = ["", "_todrop"])
 
-	#Remove those duplicates by selecting them for a drop	
-	#First, in some methods one of the columns used to merge lurks there and has to be taken out
+	#Remove those duplicates by selecting them to drop later 
+	#First, in some methods one of the columns used to merge is still there and has to be taken out
 	if method == 'nucleus_id':
 		columns2drop = ['target_id']
 	elif method == 'pt_root_id':
@@ -47,7 +69,7 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 	elif method == 'functional':
 		columns2drop = ['unit_id']
 	
-	#Then the columns that were repeated in both tables, we can keep the one from the left one
+	#Then the columns that were repeated in both tables are added to the drop list, so we can keep the one from the left one only
 	for c in merged.columns:
 		if c.endswith("_todrop"):
 			columns2drop.append(c)
@@ -76,21 +98,6 @@ def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
 		raise ValueError('Empty dataframe provided to merge_nucleus_with_cell_types')
 
 	#Perform a merge of both tables and keep only the desired columns
-	"""
-	merged = nucleus_df.merge(cell_type_df, left_on=['id'], right_on=['target_id'], how='inner')
-	merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x', 'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type']]
-
-	#Rename the columns since merge changes names, and return
-	return merged.rename(
-		columns={
-			'id_x': 'id',
-			'pt_root_id_x': 'pt_root_id',
-			'pt_position_x_x': 'pt_position_x',
-			'pt_position_y_x': 'pt_position_y',
-			'pt_position_z_x': 'pt_position_z',
-		}
-	)
-	"""
 	merged = merge_columns(nucleus_df, cell_type_df, columns=['classification_system', 'cell_type'], how='inner')
 	return merged[['nucleus_id', 'pt_root_id', 'pt_position_x', 'pt_position_y', 'pt_position_z', 'classification_system', 'cell_type']]
 
@@ -112,26 +119,10 @@ def merge_brain_area(nucleus_df, areas):
 	if nucleus_df.empty or areas.empty:
 		raise ValueError('Empty dataframe provided to merge_brain_area')
 
-	#Perform a merge of both tables and keep only the desired columns
-	"""
-	merged = nucleus_df.merge(areas, left_on=['id'], right_on=['target_id'], how='inner')
-	merged = merged[['id_x', 'pt_root_id_x', 'pt_position_x_x', 'pt_position_y_x', 'pt_position_z_x', 'classification_system', 'cell_type', 'tag']]
-
-	#Rename the columns since merge changes names, and return
-	return merged.rename(
-		columns={
-			'id_x': 'id',
-			'pt_root_id_x': 'pt_root_id',
-			'pt_position_x_x': 'pt_position_x',
-			'pt_position_y_x': 'pt_position_y',
-			'pt_position_z_x': 'pt_position_z',
-			'tag': 'brain_area',
-		}
-	)
-	"""
-
+	#Perform a merge of both tables 
 	merged = merge_columns(nucleus_df, areas, columns=['tag'], how='inner')
 
+	#Rename the column
 	return merged.rename(columns={'tag' : 'brain_area'})
 
 def merge_proofreading_status(nucleus_df, proofreading, version):
@@ -153,36 +144,9 @@ def merge_proofreading_status(nucleus_df, proofreading, version):
 	if nucleus_df.empty:
 		raise ValueError('Empty nucleus dataframe provided to merge_proofreading_status')
 
-	#Perform a merge of both tables and keep only the desired columns
-	"""
-	merged = nucleus_df.merge(proofreading, left_on=['pt_root_id'], right_on=['pt_root_id'], how='left')
-
-	name_axon = "strategy_axon" if version > 700 else "status_axon"
-	name_dend = "strategy_dendrite" if version > 700 else "status_dendrite"
-
-	merged = merged[
-		[
-			'pt_root_id',
-			'id_x',
-			'pt_position_x_x',
-			'pt_position_y_x',
-			'pt_position_z_x',
-			'classification_system',
-			'cell_type',
-			'brain_area',
-			name_dend, name_axon
-		]
-	]
-
-	# Tag the ones that have not been proofread
-	merged.loc[merged[name_dend].isna(), name_dend] = 'none'
-	merged.loc[merged[name_axon].isna(), name_axon] = 'none'
-
-	#Return the result 
-	return merged.rename(columns={'id_x': 'id', 'pt_position_x_x': 'pt_position_x', 'pt_position_y_x': 'pt_position_y', 'pt_position_z_x': 'pt_position_z'})
-	"""
-
+	#Perform a merge of both tables from the desired columns 
 	merged = merge_columns(nucleus_df, proofreading, columns=['strategy_axon', 'strategy_dendrite'], method='pt_root_id', how='left')
+
 	merged.loc[merged['strategy_axon'].isna(), 'strategy_axon']         = 'none'
 	merged.loc[merged['strategy_dendrite'].isna(), 'strategy_dendrite'] = 'none'
 	return merged
@@ -213,33 +177,28 @@ def merge_functional_properties(nucleus_df, functional, mode='best_only'):
 			functional = functional.sort_values(by='cc_abs', ascending=False)
 			functional = functional.drop_duplicates(subset='target_id', keep='first')
 			functional = functional[['target_id', 'pt_root_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
+			functional['tuning_type'] = 'matched'
 
 		#The functional table is assumed to be the Digital Twin, but all scans remain
 		case 'all':
 			functional = functional[['target_id', 'pt_root_id', 'session', 'scan_idx', 'unit_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
 			functional = functional.rename(columns = {'unit_id' : 'functional_unit_id'}) 
+			functional['tuning_type'] = 'matched'
 
 
 		#The functional table is assumed to be the coregistration table, and only the functional indices are saved
 		case 'match':
 			functional = functional[['target_id', 'pt_root_id', 'session', 'scan_idx', 'unit_id']] 
 			functional = functional.rename(columns = {'unit_id' : 'functional_unit_id'}) 
+			functional['tuning_type'] = 'matched'
 
 
 	#The pt_root_id was needed just to filter potential pt root = 0, after we can drop
 	functional = functional[functional['pt_root_id'] != 0]
 	functional = functional.drop(columns=['pt_root_id'])
 
+	#Do the merge
 	return merge_columns(nucleus_df, functional, how='left')
-
-	# Then proceed on the merge. In this case there is no common columns so filtering and renaming the result
-	# after the merge is not necessary anymore
-	"""
-	merged = nucleus_df.merge(functional, left_on=['id'], right_on=['target_id'], how='left')
-
-	#We do not need the target_id, because we have the id
-	return merged.drop(columns=['target_id'])
-	"""
 
 
 def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col='pt_position_z'):
@@ -374,7 +333,6 @@ def divide_volume_into_segments(cells_df, segment_size=10.0):
 		)
 
 	segments_df = pd.DataFrame(segments)
-
 	segments_df = enforce_layer_order(segments_df)
 
 	return segments_df
