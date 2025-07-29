@@ -21,7 +21,7 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 			the list of columns from table to add to nucleus_df. If None, all are selected.
 		method: str 
 			How the tables will be compared to each other. If 'nucleus_id' (default), the target_id 
-			is matched to the nucleus_id. If functional, the session, scan and unit_id are compared. 
+			is matched to the nucleus_id. If 'functional', the session, scan and unit_id are compared. 
 			If 'pt_root_id', merge by 'pt_root_id'. This last option is not adviced, unless is the only index available.
 		how: str
 			Equivalent to Panda's how argument for the merge function. Only 'inner' or 'left' are allowed, since the 

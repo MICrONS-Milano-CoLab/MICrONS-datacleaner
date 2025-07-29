@@ -1,6 +1,5 @@
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 from .mic_datacleaner import MicronsDataCleaner
-from .filters import MicronsFilters
 
-__all__ = ["MicronsDataCleaner", "MicronsFilters"]
+__all__ = ["MicronsDataCleaner", "filters"]

@@ -139,6 +139,16 @@ class MicronsDataCleaner:
         logging.info(f"Fetching available tables for version {self.version}.")
         return self.client.materialize.get_tables()
 
+    def read_table(self, table_name):
+        """
+        Returns a complete list of the CAVEClient available tables for the selected version
+        """
+
+        if not table_name.endswith(".csv"):
+            table_name += ".csv"
+        
+        return pd.read_csv(f"{self.data_storage}/raw/{table_name}") 
+
     def download_nucleus_data(self):
         """
         Downloads all the nucleus tables indicated by the download_policy when the object was created (see documentation for constructor). 
