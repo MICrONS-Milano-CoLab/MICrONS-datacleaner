@@ -3,9 +3,8 @@ import time as time
 import requests
 import os
 import logging
+from tqdm import tqdm
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def download_tables(client, path2download, tables2download):
 	"""
@@ -21,15 +20,15 @@ def download_tables(client, path2download, tables2download):
 	-------
         None. All results are downloaded into files
 	"""
-    logging.info(f"Starting download of nucleus data to {path2download}.")
+	logging.info(f"Starting download of nucleus data to {path2download}.")
     # Ensure directory exists
-    os.makedirs(path2download, exist_ok=True)
+	os.makedirs(path2download, exist_ok=True)
 
 	# Ensure directory exists
 	os.makedirs(path2download, exist_ok=True)
 
 	#Download all the tables in the list
-	for table in tables2download:
+	for table in tqdm(tables2download, "Downloading nucleus tables..."):
 		try:
 			auxtable = client.materialize.query_table(table, split_positions=True)
 			auxtable = pd.DataFrame(auxtable)
@@ -64,13 +63,13 @@ def connectome_constructor(
 	-------
         None. All results are downloaded into files
 	"""
-	logging.info(f"Starting connectome construction. Saving to: {savefolder}")
 	# Ensure directory exists
 	os.makedirs(savefolder, exist_ok=True)
 
 	# We are doing the neurons in packages of neurs_per_steps. If neurs_per_steps is not
 	# a divisor of the postsynaptic_set the last iteration has less neurons
 	n_before_last = (postsynaptic_set.size // neurs_per_steps) * neurs_per_steps
+	n_chunks = 1 + (postsynaptic_set.size // neurs_per_steps)
 
 	# Time before starting the party
 	time_0 = time.time()
@@ -87,55 +86,62 @@ def connectome_constructor(
 	else:
 		cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size', 'ctr_pt_position']
 	part = start_index
-	for i in range(start_index * neurs_per_steps, postsynaptic_set.size, neurs_per_steps):
-		# Inform about our progress
-		logging.info(f'Postsynaptic neurons queried so far: {i}...')
 
-		# Try to query the API several times
-		success = False  # Flag to track if current batch succeeded
-		retry = 0
-		while retry < max_retries and not success:
-			try:
-				# Get the postids that we will be grabbing in this query. We will get neurs_per_step of them
-				post_ids = postsynaptic_set[i : i + neurs_per_steps] if i < n_before_last else postsynaptic_set[i:]
-				neurons_to_download['post_pt_root_id'] = post_ids
-				logging.info(f"Querying batch starting at index {i} with {len(post_ids)} neurons.")
-				# Query the table
-				sub_syn_df = client.materialize.query_table(
-					synapse_table, filter_in_dict=neurons_to_download, select_columns=cols_2_download, split_positions=True
-				)
+	#Progress bar over the amount of chunks to download
+	with tqdm(total=n_chunks) as progress_bar:
+		#Main loop over chunks
+		for i in range(start_index * neurs_per_steps, postsynaptic_set.size, neurs_per_steps):
+			# Inform about our progress
+			logging.debug(f'Postsynaptic neurons queried so far: {i}...')
 
-				# Sum all repeated synapses. The last reset_index is because groupby would otherwise create a
-				# multiindex dataframe and we want to have pre_root and post_root as columns
-				if drop_synapses_duplicates:
-					sub_syn_df = sub_syn_df.groupby(['pre_pt_root_id', 'post_pt_root_id']).sum().reset_index()
+			# Try to query the API several times
+			success = False  # Flag to track if current batch succeeded
+			retry = 0
+			while retry < max_retries and not success:
+				try:
+					# Get the postids that we will be grabbing in this query. We will get neurs_per_step of them
+					post_ids = postsynaptic_set[i : i + neurs_per_steps] if i < n_before_last else postsynaptic_set[i:]
+					neurons_to_download['post_pt_root_id'] = post_ids
+					logging.debug(f"Querying batch starting at index {i} with {len(post_ids)} neurons.")
+					# Query the table
+					sub_syn_df = client.materialize.query_table(
+						synapse_table, filter_in_dict=neurons_to_download, select_columns=cols_2_download, split_positions=True
+					)
 
-				sub_syn_df.to_csv(f'{savefolder}/connections_table_{part}.csv', index=False)
-				logging.info(f"Successfully saved connections_table_{part}.csv")				
-				part += 1
+					# Sum all repeated synapses. The last reset_index is because groupby would otherwise create a
+					# multiindex dataframe and we want to have pre_root and post_root as columns
+					if drop_synapses_duplicates:
+						sub_syn_df = sub_syn_df.groupby(['pre_pt_root_id', 'post_pt_root_id']).sum().reset_index()
 
-				# Measure how much time in total our program did run
-				elapsed_time = time.time() - time_0
-				neurons_done = min(i + neurs_per_steps, postsynaptic_set.size)
-				time_per_neuron = elapsed_time / neurons_done
-				neurons_2_do = postsynaptic_set.size - neurons_done
-				remaining_time = time_format(neurons_2_do * time_per_neuron)
-				logging.info(f'Estimated remaining time: {remaining_time}')
-				success = True
+					sub_syn_df.to_csv(f'{savefolder}/connections_table_{part}.csv', index=False)
+					logging.info(f"Successfully saved connections_table_{part}.csv")				
+					part += 1
 
-			except requests.HTTPError as excep:
-				logging.warning(f'API error on trial {retry + 1}. Retrying in {delay} seconds... Details: {excep}')
-				time.sleep(delay)
-				retry += 1
+					# Measure how much time in total our program did run
+					elapsed_time = time.time() - time_0
+					neurons_done = min(i + neurs_per_steps, postsynaptic_set.size)
+					time_per_neuron = elapsed_time / neurons_done
+					neurons_2_do = postsynaptic_set.size - neurons_done
+					remaining_time = time_format(neurons_2_do * time_per_neuron)
+					logging.debug(f'Estimated remaining time: {remaining_time}')
+					success = True
 
-			except Exception as excep:
-				logging.error(f"An unexpected error occurred: {excep}")
-			raise excep
+					#Set that another chunk was downloaded
+					progress_bar.update(1)
+
+				except requests.HTTPError as excep:
+					logging.warning(f'API error on trial {retry + 1}. Retrying in {delay} seconds... Details: {excep}')
+					print(f'API error on trial {retry + 1}. Retrying in {delay} seconds... Details: {excep}')
+					time.sleep(delay)
+					retry += 1
+
+				except Exception as excep:
+					logging.error(f"An unexpected error occurred: {excep}")
+					raise excep
 
 	if not success:
 		logging.error('Exceeded the max retries when trying to get synaptic connectivity. Aborting.')
 		raise TimeoutError('Exceeded the max_tries when trying to get synaptic connectivity')
-	logging.info("Connectome construction finished successfully.")
 
 def time_format(seconds):
     """
@@ -199,7 +205,7 @@ def merge_connection_tables(savefolder, filename):
 		logging.warning('No connection tables found to merge.')
 		return
 
-    logging.info(f"Found {len(connection_files)} connection tables to merge.")
+	logging.info(f"Found {len(connection_files)} connection tables to merge.")
     
 	# Merge all of them
 	first_file = connection_files[0]

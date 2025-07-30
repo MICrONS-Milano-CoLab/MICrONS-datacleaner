@@ -5,7 +5,18 @@ from standard_transform import minnie_ds
 from scipy.stats import circmean
 from tqdm import tqdm
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(funcName)s] - %(message)s')
+LAYER_CELL_TYPES = {
+	'L1': ['NGC', 'BPC', 'MC', 'BC'],
+	'L2/3': ['23P'],
+	'L4': ['4P'],
+	'L5': ['5P-IT', '5P-ET', '5P-NP'],
+	'L6': ['6P-IT', '6P-CT'],
+	'WM': ['Oligo', 'OPC', 'Pericyte'],
+}
+"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
+
+LAYER_ORDER = ['L1', 'L2/3', 'L4', 'L5', 'L6', 'WM']
+"""Names of the layers."""
 
 def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='left'):
 	"""
@@ -221,10 +232,10 @@ def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col=
     pandas.DataFrame
         DataFrame with transformed positions
     """
-    logging.info("Transforming positions from voxels to micrometers.")
+    logging.debug("Transforming positions from voxels to micrometers.")
     if df.empty:
-        print("Warning: Empty dataframe provided to transform_positions")
-        return df
+        logging.error("Empty dataframe provided to transform_positions")
+        raise ValueError(f"Empty dataframe provided to transform_positions")
     
     # Check if required columns exist
     if not all(col in df.columns for col in [x_col, y_col, z_col]):
@@ -245,28 +256,18 @@ def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col=
     return df
 
 
-LAYER_CELL_TYPES = {
-	'L1': ['NGC', 'BPC', 'MC', 'BC'],
-	'L2/3': ['23P'],
-	'L4': ['4P'],
-	'L5': ['5P-IT', '5P-ET', '5P-NP'],
-	'L6': ['6P-IT', '6P-CT'],
-	'WM': ['Oligo', 'OPC', 'Pericyte'],
-}
-"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
-
-LAYER_ORDER = ['L1', 'L2/3', 'L4', 'L5', 'L6', 'WM']
-"""Names of the layers."""
-
-
-def divide_volume_into_segments(cells_df, segment_size=10.0):
+def divide_volume_into_segments(cells_df, segment_size=10.0, threshold_L23 = 300):
 	"""
 	Divide the volume into segments along the y-axis.
 
 	Parameters:
 	-----------
-	    cells_df: DataFrame with cell information
-	    segment_size (optioanl) Size of each segment in micrometers. Defaults to 10.0
+	    cells_df: 
+			DataFrame with cell information
+	    segment_size (optional, float) 
+			Size of each segment in micrometers. Defaults to 10.0
+	    threshold_L23 (optional, int) 
+			The layer is considered to be L1 if typical L23 neurons are below this amount 
 
 	Returns:
 	--------
@@ -306,7 +307,7 @@ def divide_volume_into_segments(cells_df, segment_size=10.0):
 			l23_cells = layer_counts.get('L2/3', 0)
 
 			# If L2/3 cells are less than threshold, assign L1
-			if l23_cells < 300:
+			if l23_cells < threshold_L23:
 				dominant_layer = 'L1'
 			else:
 				# Once we exceed the threshold, assign L2/3 and set the flag

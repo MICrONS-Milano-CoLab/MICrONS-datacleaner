@@ -10,8 +10,6 @@ from . import processing as proc
 
 import requests
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class MicronsDataCleaner:
     """
@@ -53,10 +51,10 @@ class MicronsDataCleaner:
             extra_tables: list, optional
                 List of extra table names to be downloaded. See the download_police for more information.
         """
-        logging.info("Initializing MicronsDataCleaner...")
         self.version = version
         self.datadir = datadir
         self.data_storage = f"{self.homedir}/{self.datadir}/{self.version}"
+
         logging.info(f"Data will be stored in: {self.data_storage}")
 
         # Ensure directories exist
@@ -105,7 +103,7 @@ class MicronsDataCleaner:
             #Any other string is an error
             case _: 
                 logging.error(f"Invalid download policy: {download_policy}")
-                raise ValueError("`download_tables` must be either `default`, `all`, `extra`, or `custom`")
+                raise ValueError("`download_tables` must be either `default`, `all` or `extra`")
 
         #Eliminate any 'None' value that could have appeared
         self.tables_2_download = [x for x in self.tables_2_download if x is not None] 
@@ -120,23 +118,24 @@ class MicronsDataCleaner:
             version: optional, allows to fix the version to download. If left at None, it points to the last one.
 
         """
-        logging.info(f"Initializing CAVEclient for minnie65_public, version {version}.")
+        logging.debug(f"Initializing CAVEclient for minnie65_public, version {version}.")
         try:
             self.client = CAVEclient('minnie65_public') 
             self.client.version = version
-            logging.info("CAVEclient initialized successfully.")
+            logging.debug("CAVEclient initialized successfully.")
         except requests.HTTPError as excep:
             if '503' in str(excep):
-                logging.warning("HTTP error 503: the MICrONS server is temporarily unavailable. Client cannot be used for new downloads.")
+                logging.error("HTTP error 503: the MICrONS server is temporarily unavailable. Client cannot be used for new downloads.")
+                print("HTTP error 503: the MICrONS server is temporarily unavailable. Client cannot be used for new downloads.")
             else:
-                logging.error(f"HTTP error while initializing client: {excep}")
+                logging.error("Unhandled exception during while setting up the client: " + str(excep))
+                raise excep
         return
 
     def get_table_list(self):
         """
         Returns a complete list of the CAVEClient available tables for the selected version
         """
-        logging.info(f"Fetching available tables for version {self.version}.")
         return self.client.materialize.get_tables()
 
     def read_table(self, table_name):
@@ -153,9 +152,9 @@ class MicronsDataCleaner:
         """
         Downloads all the nucleus tables indicated by the download_policy when the object was created (see documentation for constructor). 
         """
-	logging.info(f"Downloading nucleus data tables: {self.tables_2_download}")
+        logging.info(f"Downloading nucleus data tables: {self.tables_2_download}")
         down.download_tables(self.client,f"{self.data_storage}/raw/",  self.tables_2_download)
-	logging.info("Nucleus data download completed.")
+        logging.info("Nucleus data download completed.")
         return
 
     def download_tables(self, table_names):
@@ -166,9 +165,9 @@ class MicronsDataCleaner:
         ----------
             table_names: list of str, the names of the tables to be downloaded
         """
-	logging.info(f"Downloading custom tables: {custom_tables}")
+        logging.info(f"Downloading custom tables: {table_names}")
         down.download_tables(self.client,f"{self.data_storage}/raw/",  table_names) 
-	logging.info("Custom tables download completed.")
+        logging.info("Custom tables download completed.")
         return
 
 
@@ -192,10 +191,10 @@ class MicronsDataCleaner:
             drop_synapses_duplicates: optional, defaults to True. If true, it merges all the synapses between neuron i-th and j-th to a single connection in which
                 the synapse_size is the total sum of all synapse sizes between those two elements.
         """
-        logging.info("Starting synapse data download.")
+        logging.debug("Starting synapse data download.")
         down.connectome_constructor(self.client, presynaptic_set, postsynaptic_set, f"{self.data_storage}/raw/synapses",
                                    neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
-        logging.info("Synapse data download completed.")
+        logging.debug("Synapse data download completed.")
         return
 
     def merge_synapses(self, syn_table_name):
@@ -210,9 +209,7 @@ class MicronsDataCleaner:
         --------
             None.
         """
-        logging.info(f"Merging synapse tables into '{syn_table_name}'.")
         down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
-        logging.info("Synapse tables merged successfully.")
         return
 
     def merge_table(self, unit_table, new_table, columns, method="nucleus_id", how='left'):
@@ -261,11 +258,11 @@ class MicronsDataCleaner:
             nucleus_merged: a unit_table with all the nucleus information processed.
             segments: an array with the positions of all segments
         """
-        logging.info(f"Processing nucleus data with functional data option: '{with_functional}'.")
+        logging.info(f"Processing nucleus data with functional data option: '{functional_data}'.")
         try:
 
             #Read all the downloaded data
-            logging.info("Reading downloaded data files.")
+            logging.debug("Reading downloaded data files.")
             nucleus   = pd.read_csv(f"{self.data_storage}/raw/{self.tables['nucleus']}.csv")
             celltype  = pd.read_csv(f"{self.data_storage}/raw/{self.tables['celltype']}.csv")
             proofread = pd.read_csv(f"{self.data_storage}/raw/{self.tables['proofreading']}.csv")
@@ -280,36 +277,37 @@ class MicronsDataCleaner:
             elif functional_data == 'match':
                 coreg = pd.read_csv(f"{self.data_storage}/raw/{self.tables['coreg']}.csv")
 
-            logging.info("Merging nucleus data with cell types.")
             #Call all the merge functions. First, cell types
+            logging.debug("Merging nucleus data with cell types.")
             nucleus_merged = proc.merge_nucleus_with_cell_types(nucleus, celltype)
 
-            logging.info("Merging brain area information.")
             #Then, brain area. 
+            logging.debug("Merging brain area information.")
             nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
 
-            logging.info("Merging proofreading status.")
             #Proofreading info
+            logging.debug("Merging proofreading status.")
             nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread, self.version)
 
-            logging.info("Transforming positions.")
             #Get the correct positions
+            logging.debug("Transforming positions.")
             nucleus_merged = proc.transform_positions(nucleus_merged)
 
-            logging.info("Segmenting volume and adding layer info.")
             #Segment the data and add the information about layers
+            logging.debug("Segmenting volume and adding layer info.")
             segments = proc.divide_volume_into_segments(nucleus_merged)
             segments = proc.merge_segments_by_layer(segments)
 
             proc.add_layer_info(nucleus_merged, segments)
 
-            logging.info("Cleaning table: removing multisoma objects and duplicates.")
             #Clean the resulting table by eliminating all multisoma objects. 
+            logging.debug("Cleaning table: removing multisoma objects and duplicates.")
             nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
             nucleus_merged = nucleus_merged.drop_duplicates(subset='pt_root_id', keep=False)
 
 
             #Finally, functional properties. 
+            logging.debug("Adding functional information")
             if functional_data in ['best_only', 'all']: 
                 nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops, mode=functional_data)
                 nucleus_merged.loc[nucleus_merged['tuning_type'].isna(), 'tuning_type'] = 'not_matched'
@@ -324,4 +322,4 @@ class MicronsDataCleaner:
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Error: Required data file not found: {e}")
         except Exception as e:
-            raise RuntimeError(f"Error processing nucleus data: {e}")
+            raise e 
