@@ -108,6 +108,21 @@ class MicronsDataCleaner:
         #Eliminate any 'None' value that could have appeared
         self.tables_2_download = [x for x in self.tables_2_download if x is not None] 
 
+    def download_functional_fits(self, foldername="functional"):
+        """
+        Downloads the tunign curves and their fits for the functional dataset processed for the 
+        MICrONS DataCleaner package. This table is directly downloaded from Zenodo as it is digested from the functional data.
+        See the docs for more information
+
+        Parameters
+        ==========
+
+        foldername : str
+            Folder where to save the table. If it does not exist, it will be created. The folder is independent of the MICrONS version.
+        """
+        os.makedirs(f"{self.homedir}/{self.datadir}/{foldername}", exist_ok=True)
+        down.download_functional_fits(f"{self.homedir}/{self.datadir}/{foldername}/tuning_curves_fitted_v1.csv")
+
 
     def _initialize_client(self, version):
         """

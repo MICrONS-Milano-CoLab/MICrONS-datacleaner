@@ -218,3 +218,21 @@ def merge_connection_tables(savefolder, filename):
 	table.to_csv(output_path, index=False)
 	logging.info(f'Merged {len(connection_files)} tables into {output_path}')
 	return
+
+
+def download_functional_fits(filepath):
+	"""
+	Downloads our file with information on functional fits from a static Zenodo link. 
+
+	Parameters
+	==========
+
+	filepath, str
+		The path to save the file
+	"""
+
+	#TODO
+	response = requests.get("URL TO OUR FILE IN ZENODO")
+
+	with open(f"{filepath}.csv", mode="wb") as file:
+		file.write(response.content)
