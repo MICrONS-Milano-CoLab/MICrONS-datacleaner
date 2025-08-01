@@ -289,26 +289,26 @@ class MicronsDataCleaner:
         
         Parameters:
         -----------
-        presynaptic_set: numpy.ndarray
-            A 1D NumPy array of unique `root_ids` for the presynaptic neurons.
-        postsynaptic_set: numpy.ndarray
-            A 1D NumPy array of unique `root_ids` for the postsynaptic neurons.
-        neurs_per_steps: int, optional
-            The number of postsynaptic neurons to query per batch, by default 500.
-            This is crucial for managing API query size and preventing crashes.
-        start_index: int, optional
-            The batch index from which to start or resume the download, by default 0.
-            Set this to continue an interrupted download.
-        max_retries: int, optional
-            The maximum number of times to retry a failed API query before
-            raising an error, by default 10.
-        delay: int, optional
-            The number of seconds to wait between retries if an API error occurs,
-            by default 5.
-        drop_synapses_duplicates: bool, optional
-            If True (default), all synapses between any two neurons are merged into a
-            single entry, with `synapse_size` being the sum of individual sizes.
-            If False, each synapse is kept as a separate record.
+            presynaptic_set: numpy.ndarray
+                A 1D NumPy array of unique `root_ids` for the presynaptic neurons.
+            postsynaptic_set: numpy.ndarray
+                A 1D NumPy array of unique `root_ids` for the postsynaptic neurons.
+            neurs_per_steps: int, optional
+                The number of postsynaptic neurons to query per batch, by default 500.
+                This is crucial for managing API query size and preventing crashes.
+            start_index: int, optional
+                The batch index from which to start or resume the download, by default 0.
+                Set this to continue an interrupted download.
+            max_retries: int, optional
+                The maximum number of times to retry a failed API query before
+                raising an error, by default 10.
+            delay: int, optional
+                The number of seconds to wait between retries if an API error occurs,
+                by default 5.
+            drop_synapses_duplicates: bool, optional
+                If True (default), all synapses between any two neurons are merged into a
+                single entry, with `synapse_size` being the sum of individual sizes.
+                If False, each synapse is kept as a separate record.
         
         Returns:
         --------

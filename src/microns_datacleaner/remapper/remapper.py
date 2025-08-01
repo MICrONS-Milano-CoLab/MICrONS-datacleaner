@@ -3,10 +3,10 @@ import pandas as pd
 import scipy.sparse as sp
 
 def get_id_map(units):
-	"""
+    """
     Creates a mapping dictionary from original neuron IDs to sequential integer indices.
     This function generates a dictionary that maps the original neuron IDs to a sequential
-	series of integers starting from 0.
+    series of integers starting from 0.
     
     Parameters:
     -----------
@@ -36,7 +36,7 @@ def get_id_map(units):
 
 
 def remap_table(idx_remap, table, columns):
-	"""
+    """
     Remaps specified columns in a table using a provided ID mapping dictionary.
     This function applies an ID remapping transformation to specified columns
     of a DataFrame, converting original neuron IDs to sequential integer indices.
@@ -65,7 +65,7 @@ def remap_table(idx_remap, table, columns):
 
 
 def remap_all_tables(units, connections):
-	"""
+    """
     Remaps all neuron and connection tables to use sequential integer IDs.
     This convenience function performs a complete remapping of both neuron and
     connection tables from original ID systems to sequential integer indexing
@@ -84,11 +84,11 @@ def remap_all_tables(units, connections):
     --------
         tuple of pandas.DataFrames
             new_units: DataFrame with both original 'pt_root_id' and remapped
-            	'id_remapped' columns.
+                'id_remapped' columns.
             new_connections: DataFrame with remapped 'pre_id' and 'post_id'
-            	columns using sequential integer IDs.
+                columns using sequential integer IDs.
     """
-	
+    
     # Duplicate the pt_root_id column, one will be remapped
     new_units = units.rename(columns={"pt_root_id" : "id_remapped"})
     new_units['pt_root_id'] = units['pt_root_id']
