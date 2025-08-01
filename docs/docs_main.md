@@ -2,7 +2,7 @@
 
 This webpage contains all the documentation for the [MICrONS DataCleaner](https://github.com/margheritapremi/MICrONS-datacleaner) pakcage. 
 
-## Install
+## Install 📥
 
 You can install the package from PyPi via 
 
@@ -10,7 +10,7 @@ You can install the package from PyPi via
 pip install microns-datacleaner
 ```
 
-## Quick Start
+## Quick Start ⏩
 
 For more detailed code, you can also check out the `basic_tutorial.ipynb` notebook inside `tutorial`.
 
@@ -113,9 +113,9 @@ Please read the API documentation for filters to find our more.
 When working with functional data and tunign curves it is useful to obtain the rates as a matrix to efficiently compute currents. This needs a remapping of the `pt_root_id`. Please check out the `basic_tutorial` notebook or the `remapper` subpackage docs to find out more.
 
 
-## License and citation policy
+## License and citation policy 📚
 
-The code is shared under a XXXXX license. When using our package, please consider citing it appropiately.
+The code is shared under a license. When using our package, please consider citing it appropiately.
 
 The data is downloaded from the [MICrONS Project](https://www.microns-explorer.org/) directly. Therefore, please follow also the [license and citation policy of the MICrONS dataset](https://www.microns-explorer.org/citation-policy). 
 
@@ -132,7 +132,7 @@ To construct the tables the package downloads results derived from the following
 4. [NEURD offers automated proofreading and feature extraction for connectomics](https://doi.org/)
 5. [CAVE: Connectome Annotation Versioning Engine](https://doi.org/10.1038/s41592-024-02426-z)
 
-## Building the docs
+## Building the docs 📜 
 
 To generate these docs locally in your computer, you need [pdoc](https://pdoc.dev/). Then, fromn the root directory of the repository, run
 

@@ -13,13 +13,13 @@ This project contains tools to work with the [MICrONS Cortical MM3 dataset](http
 - **Tools for filtering** and constructing connectome subsets. 
 - Basic interface to add functional properties, including **tuning curves and selectivity**. 
 
-## Install
+## Install 📥
 
 ```bash
 pip install microns-datacleaner
 ```
 
-## Using the package
+## Using the package ⏩
 
 - **Few lines of code** to get a full table with neurons' brain area, layer, cell_type, proofreading information, and nucleus position:
 
@@ -57,13 +57,13 @@ cleanerdownload_synapse_data(preids, postids, start_index=23)
 Check the docs and our tutorial notebook just below to get started!
 
 
-## Docs & Tutorials
+## Docs & Tutorials 📜 
 
 If it is the first time working with the MICrONS data, we recommend you read our basic tutorial (also available as a Python Notebook), as well as the official documentation of the MICrONS project.  
 
 If you want to contribute, please read our guidelines first. Feel free to open an issue if you find any problem.  
 
-You can find a full documentation of the API and functions in the [docs](LINK). 
+You can find a full documentation of the API and functions in the [docs](https://margheritapremi.github.io/MICrONS-datacleaner). 
 
 
 ## Requirements 
@@ -84,22 +84,18 @@ You can find a full documentation of the API and functions in the [docs](LINK).
 
 
 
-## Citation Policy 
+## Citation Policy 📚
 
 If you use our code, **please consider to cite the associated repository,** as well as the [IARPA MICrONS Minnie Project](https://doi.org/10.60533/BOSS-2021-T0SY) and the [Microns Phase 3 NDA](https://github.com/cajal/microns_phase3_nda) repository. 
 
-Our code serves as an interface for the MICrONS data. Please cite appropiate the literature for the data used following their [Citation Policy](LINK). The papers may depend on the annotation tables used.
+Our code serves as an interface for the MICrONS data. Please cite appropiate the literature for the data used following their [Citation Policy](https://www.microns-explorer.org/citation-policy). The papers may depend on the annotation tables used.
 
 Our unit table is constructed by integrating information from the following papers:
 
 1. [Functional connectomics spanning multiple areas of mouse visual cortex](https://doi.org/10.1038/s41586-025-08790-w). The Microns Consortium. 2025 
-
 2. [Foundation model of neural activity predicts response to new stimulus types](https://doi.org/10.1038/s41586-025-08829-y)
-
 3. [Perisomatic ultrastructure efficiently classifies cells in mouse cortex](http://doi.org/10.1038/s41586-024-07765-7)
-
 4. [NEURD offers automated proofreading and feature extraction for connectomics](https://doi.org/)
-
 5. [CAVE: Connectome Annotation Versioning Engine](https://doi.org/10.1038/s41592-024-02426-z)
 
 ## Acknowledgements
@@ -108,11 +104,6 @@ We acknowledge funding by the NextGenerationEU, in the framework of the FAIR—F
 
 
 ## Generating the Docs 
-
-## How to use 
-
-(To be written)
-See the `tutorial` notebook.
 
 ## Generating the docs
 
