@@ -143,16 +143,19 @@ class MicronsDataCleaner:
         
         Parameters:
         -----------
-            foldername: str, optional
-                The name of the subfolder within the main data directory where the
-                data will be saved, by default "functional". If this folder does
-                not exist, it will be created.
+        - **foldername : *str, optional***
+
+            The name of the subfolder within the main data directory where the
+            data will be saved, by default "functional". If this folder does
+            not exist, it will be created.
         
         Returns:
         --------
-            None.
-                This method does not return a value. It saves the downloaded data to
-                a file named 'tuning_curves_fitted_v1.csv' inside the specified folder.
+        - **None.**
+
+            This method does not return a value. It saves the downloaded data to
+            a file named 'tuning_curves_fitted_v1.csv' inside the specified folder.
+
         """
 
         os.makedirs(f"{self.homedir}/{self.datadir}/{foldername}", exist_ok=True)
