@@ -25,6 +25,7 @@ def download_tables(client, path2download, tables2download):
 	    	This function does not return any value. It saves the downloaded tables as files in the 
 		specified directory.
 	"""
+	
 	logging.info(f"Starting download of nucleus data to {path2download}.")
     	# Ensure directory exists
 	os.makedirs(path2download, exist_ok=True)
