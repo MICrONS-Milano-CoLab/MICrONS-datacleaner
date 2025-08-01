@@ -39,9 +39,9 @@ class MicronsDataCleaner:
 
         Parameters:
         -----------
-            datadir: string, optional. 
+            datadir: string, optional
                 Defaults to 'data'. Points to the folder where information will be downloaded.
-            custom_tables: dict, optional. 
+            custom_tables: dict, optional 
                 Used to override the default tables used to construct the unit table in a given version. The keys for the tables
                 to be overrided are 'celltype' for the nucleus classification scheme, 'proofreading' for the prooreading table,
                 'brain_areas' for assigned brain areas, 'func_props' for functional properties, and 'coreg' for the coregistration table.
@@ -50,7 +50,13 @@ class MicronsDataCleaner:
                 to construct our unit table. 'all' gets all of them. 'extra' gets the same as 'minimum' plus the tables specified in `extra_tables`.
             extra_tables: list, optional
                 List of extra table names to be downloaded. See the download_police for more information.
+
+        Returns:
+        --------
+            None.
+                This method is a constructor and does not return any value.
         """
+        
         self.version = version
         self.datadir = datadir
         self.data_storage = f"{self.homedir}/{self.datadir}/{self.version}"
@@ -63,18 +69,35 @@ class MicronsDataCleaner:
         os.makedirs(f"{self.data_storage}/raw/synapses", exist_ok=True)
         logging.info("Data directories created successfully.")
 
-        #Initialize the CAVEClient with the user-specified version 
+        # Initialize the CAVEClient with the user-specified version 
         self._initialize_client(version)
 
-        #Set the tables to download according to the version
+        # Set the tables to download according to the version
         self._configure_download_tables(version, download_policy, extra_tables)
 
     def _configure_download_tables(self, version, download_policy, extra_tables):
         """
-        Internal function that configures the tables to be downloaded according to the selected version and download policy.
-        See the constructor for information on custom_tables and possible policies. This function is not intended for the user. 
+        Configures the list of tables to be downloaded based on version and policy.
+        This is an internal helper method called by the constructor.
+        This method is not intended for direct use by the end-user.
+    
+        Parameters:
+        -----------
+            version: int
+                The dataset version, used to select the correct set of default table names.
+            download_policy : {'minimum', 'all', 'extra', 'custom'}
+                The policy that determines which tables will be included in the download list.
+            extra_tables : list[str]
+                A list of extra table names to be considered when the `download_policy`
+                is 'extra' or 'custom'.
+    
+        Returns:
+        --------
+            None.
+                This method does not return a value. It modifies the instance attributes
+                `self.tables` and `self.tables_2_download` in-place.
         """
-
+        
         self.tables = {}
 
         match version:
@@ -86,53 +109,75 @@ class MicronsDataCleaner:
                 self.tables['func_props']   = "functional_properties_v3_bcm"
                 self.tables['coreg']        = "coregistration_manual_v4"
 
-        #Set the tables that we will need to download.
+        # Set the tables that we will need to download.
         match download_policy:
-            #Default. Gets only the ones we will use to generate our unit table 
+            # Default. Gets only the ones we will use to generate our unit table 
             case 'minimum':
                 self.tables_2_download = list(self.tables.values()) 
 
-            #All gets all available tables for this version
+            # All gets all available tables for this version
             case 'all':
                 self.tables_2_download = self.get_table_list()
 
-            #Get the minimum ones + the tables specified in the extra array
+            # Get the minimum ones + the tables specified in the extra array
             case 'extra':
                 self.tables_2_download = list(self.tables.values()) + extra_tables 
             
-            #Any other string is an error
+            # Any other string is an error
             case _: 
                 logging.error(f"Invalid download policy: {download_policy}")
                 raise ValueError("`download_tables` must be either `default`, `all` or `extra`")
 
-        #Eliminate any 'None' value that could have appeared
+        # Eliminate any 'None' value that could have appeared
         self.tables_2_download = [x for x in self.tables_2_download if x is not None] 
 
     def download_functional_fits(self, foldername="functional"):
         """
-        Downloads the tunign curves and their fits for the functional dataset processed for the 
-        MICrONS DataCleaner package. This table is directly downloaded from Zenodo as it is digested from the functional data.
-        See the docs for more information
-
-        Parameters
-        ==========
-
-        foldername : str
-            Folder where to save the table. If it does not exist, it will be created. The folder is independent of the MICrONS version.
+        Downloads functional tuning curves and fits from Zenodo.
+        This convenience method downloads a pre-processed data file containing
+        functional tuning curves and their fits. The data is hosted on Zenodo
+        and has been specifically prepared for use with this package. The method
+        handles the creation of the destination folder before initiating the download.
+        
+        Parameters:
+        -----------
+            foldername: str, optional
+                The name of the subfolder within the main data directory where the
+                data will be saved, by default "functional". If this folder does
+                not exist, it will be created.
+        
+        Returns:
+        --------
+            None.
+                This method does not return a value. It saves the downloaded data to
+                a file named 'tuning_curves_fitted_v1.csv' inside the specified folder.
         """
+
         os.makedirs(f"{self.homedir}/{self.datadir}/{foldername}", exist_ok=True)
         down.download_functional_fits(f"{self.homedir}/{self.datadir}/{foldername}/tuning_curves_fitted_v1.csv")
 
 
     def _initialize_client(self, version):
         """
-        Initialize a CAVEClient with the desired version.
-
+        Initializes and configures the CAVEClient for a specific dataset version.
+        This internal helper method creates an instance of the CAVEclient,
+        pointing to the 'minnie65_public' datastack, and sets the desired
+        materialization version. It is called by the constructor and is not
+        intended for direct use by the end-user.
+        
         Parameters:
         -----------
-            version: optional, allows to fix the version to download. If left at None, it points to the last one.
-
+            version: int
+                The materialization version to be used for all subsequent data queries.
+                If left at None, it points to the last one.
+        
+        Returns:
+        --------
+            None.
+                This method does not return a value. It sets the `self.client`
+                attribute on the class instance.
         """
+        
         logging.debug(f"Initializing CAVEclient for minnie65_public, version {version}.")
         try:
             self.client = CAVEclient('minnie65_public') 
@@ -149,13 +194,36 @@ class MicronsDataCleaner:
 
     def get_table_list(self):
         """
-        Returns a complete list of the CAVEClient available tables for the selected version
+        Retrieves a list of all available tables for the current version.
+        This method queries the CAVEclient to get the names of all tables
+        available in the currently configured materialization version.
+        
+        Parameters:
+        -----------
+            None.
+            
+        Returns:
+        --------
+            list[str]
+                A list of strings, where each string is the name of an available
+                table in the dataset.
         """
+
         return self.client.materialize.get_tables()
 
     def read_table(self, table_name):
         """
-        Returns a complete list of the CAVEClient available tables for the selected version
+        Reads a specified table from a local CSV file into a pandas DataFrame.
+        
+        Parameters:
+        -----------
+            table_name: str
+                The name of the table to read.
+
+        Returns:
+        --------
+            pandas.DataFrame
+                A DataFrame containing the data from the specified CSV file.
         """
 
         if not table_name.endswith(".csv"):
@@ -165,8 +233,20 @@ class MicronsDataCleaner:
 
     def download_nucleus_data(self):
         """
-        Downloads all the nucleus tables indicated by the download_policy when the object was created (see documentation for constructor). 
+        Downloads all nucleus-related tables based on the initial configuration.
+        The specific tables downloaded depend on the `download_policy` chosen at initialization.
+        
+        Parameters:
+        -----------
+            None.
+            
+        Returns:
+        --------
+            None.
+                This method does not return a value. It saves the downloaded tables
+                as CSV files in the `raw` data directory. 
         """
+
         logging.info(f"Downloading nucleus data tables: {self.tables_2_download}")
         down.download_tables(self.client,f"{self.data_storage}/raw/",  self.tables_2_download)
         logging.info("Nucleus data download completed.")
@@ -174,12 +254,23 @@ class MicronsDataCleaner:
 
     def download_tables(self, table_names):
         """
-        Downloads the specified tables.
-
-        Parameters
-        ----------
-            table_names: list of str, the names of the tables to be downloaded
+        Downloads a user-specified list of tables.
+        This method allows for downloading an arbitrary list of tables from the
+        database, in addition to those specified by the download policy during
+        initialization.
+        
+        Parameters:
+        ----------- 
+            table_names: list[str]
+                A list containing the exact names of the tables to be downloaded.
+        
+        Returns:
+        --------
+            None.
+                This method does not return a value. It saves the downloaded tables
+                as CSV files in the `raw` data directory.
         """
+
         logging.info(f"Downloading custom tables: {table_names}")
         down.download_tables(self.client,f"{self.data_storage}/raw/",  table_names) 
         logging.info("Custom tables download completed.")
@@ -188,24 +279,38 @@ class MicronsDataCleaner:
 
     def download_synapse_data(self, presynaptic_set, postsynaptic_set, neurs_per_steps = 500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=True):
         """
-        Downloads all the synapses for the specifiied pre- and post- synaptic steps.
-
+        Downloads synaptic connections between specified sets of neurons.
+        
         Parameters:
         -----------
-            client: CAVEclient needed to access MICrONS connectomics data
-            presynaptic_set: 1-d array of non repeated root_ids of presynaptic neurons for which to extract postsynaptoc connections in postynaptic_set
-            postsynaptic_set: 1-d array of non repeated root_ids of postsynaptic neurons for which to extract presynaptic connections in presynaptic_set
-            neurs_per_steps: optional, defaults to 500. Number of postsynaptic neurons for which to recover presynaptic connectivity per single call to the connectomics
-                database. Since the connectomics database has a limit on the number of connections you can query at once
-                this iterative method optimises querying multiple neurons at once, as opposed to each single neuron individually,
-                while also preventing the queries from crashing. I have tested that for a presynaptic set of around 8000 neurons
-                you can reliably extract the connectivity for around 500 postsynaptic neurons at a time.
-            start_index: optional, defaults to 0. If previous download was interrupted, one can manually set the index of the last file downloaded to continue
-                from that point on. For any fresh download it should be kept 0.
-            max_retries: optional, defaults to 10. The number of times to retry if the server is not responding before giving up.
-            drop_synapses_duplicates: optional, defaults to True. If true, it merges all the synapses between neuron i-th and j-th to a single connection in which
-                the synapse_size is the total sum of all synapse sizes between those two elements.
+        presynaptic_set: numpy.ndarray
+            A 1D NumPy array of unique `root_ids` for the presynaptic neurons.
+        postsynaptic_set: numpy.ndarray
+            A 1D NumPy array of unique `root_ids` for the postsynaptic neurons.
+        neurs_per_steps: int, optional
+            The number of postsynaptic neurons to query per batch, by default 500.
+            This is crucial for managing API query size and preventing crashes.
+        start_index: int, optional
+            The batch index from which to start or resume the download, by default 0.
+            Set this to continue an interrupted download.
+        max_retries: int, optional
+            The maximum number of times to retry a failed API query before
+            raising an error, by default 10.
+        delay: int, optional
+            The number of seconds to wait between retries if an API error occurs,
+            by default 5.
+        drop_synapses_duplicates: bool, optional
+            If True (default), all synapses between any two neurons are merged into a
+            single entry, with `synapse_size` being the sum of individual sizes.
+            If False, each synapse is kept as a separate record.
+        
+        Returns:
+        --------
+            None.
+                This method does not return a value. It saves the downloaded synapse
+                tables as a series of CSV files in the `raw/synapses` directory.
         """
+       
         logging.debug("Starting synapse data download.")
         down.connectome_constructor(self.client, presynaptic_set, postsynaptic_set, f"{self.data_storage}/raw/synapses",
                                    neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
@@ -214,31 +319,35 @@ class MicronsDataCleaner:
 
     def merge_synapses(self, syn_table_name):
         """
-        Merges all the batches of the downloaded synapses. 
+        Merges downloaded synapse data batches into a single CSV file.
 
-        Parameters
+        Parameters:
         -----------
             syn_table_name: str
-                The name of the CSV file containing resulting merged synapse table
-        Returns
+                The name for the output file that will contain the merged synapse data.
+                
+        Returns:
         --------
             None.
+                This method does not return a value. It saves the merged table to a file.
         """
+        
         down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
         return
 
     def merge_table(self, unit_table, new_table, columns, method="nucleus_id", how='left'):
         """
-        General function to add new columns to the unit table in a flexible way. 
+        Merges new columns from a source table into the main unit table.
 
-        Parameters
-        ----------
-            unit_table: Dataframe
-                unit table created by the Microns Datacleaner
-            table: Dataframe 
-                table from which the new columns are going to be added
-            columns: list of str 
-                the list of columns from table to add to unit_table. If None, all are selected.
+        Parameters:
+        -----------
+            unit_table: pandas.DataFrame
+                The primary DataFrame to which new columns will be added.
+            new_table: pandas.DataFrame
+                The source DataFrame from which to pull the new columns.
+            columns: list[str] or None
+                A list of column names from `new_table` to merge into `unit_table`.
+                If None, all columns from `new_table` (except the join keys) are used.
             method: str 
                 How the tables will be compared to each other. If 'nucleus_id' (default), the target_id 
                 is matched to the nucleus_id. If functional, the session, scan and unit_id are compared. 
@@ -246,82 +355,95 @@ class MicronsDataCleaner:
             how: str
                 Equivalent to Panda's how argument for the merge function. Only 'inner' or 'left' are allowed, since the 
                 new columns are always added into the nucleus table.
-        Returns
-        -------
-            The unit table with the new columns added to it.
-        """
-        return proc.merge_columns(unit_table, new_table, columns, method=method, how=how)
-        
-
-
-    def process_nucleus_data(self, functional_data='none'):
-        """
-        Processes all the downloaded nucleus data to generate a unified units_table. This includes information on 
-        brain area, functional data, proofreading, as well as a layer segmentation.
-
-        Parameters:
-        -----------
-            with_functional: string. 
-            If 'none', no functional data is added to the table (default). 
-            If 'match', the 'session', 'scan_idx' and 'unit_id' indices are added to match the units with the corresponding functional scans.
-            Note that 'unit_id' is renamed to 'functional_unit_id' to avoid confusions. 
-            If 'all', the functional data from the digital twin is added, conserving units with multiple scans and the three aforementioned indices. 
-            If 'best_only' only the scan with the highest performance from the digital twin is considered (and the scan indices are not added).  
         
         Returns:
         --------
-            nucleus_merged: a unit_table with all the nucleus information processed.
-            segments: an array with the positions of all segments
+            pandas.DataFrame
+                The merged DataFrame with the newly added columns.
         """
+        
+        return proc.merge_columns(unit_table, new_table, columns, method=method, how=how)
+
+    def process_nucleus_data(self, functional_data='none'):
+        """
+        Processes downloaded data to generate a final, annotated unit table.
+        It reads all previously downloaded nucleus-related tables (cell type,
+        proofreading, brain area, etc.), merges them sequentially, transforms
+        coordinates, performs cortical layer segmentation, and optionally
+        integrates functional data based on the chosen strategy.
+        
+        Parameters:
+        -----------
+            functional_data: {'none', 'match', 'all', 'best_only'}, optional
+                Specifies how to integrate functional data, by default 'none'.
+                - 'none': No functional data is added.
+                - 'match': Adds columns (`session`, `scan_idx`, `functional_unit_id`)
+                  to allow matching units with their corresponding functional scans.
+                - 'all': Merges functional data from all available scans for each unit,
+                  potentially resulting in multiple rows per unit.
+                - 'best_only': Merges data only from the scan with the highest
+                  performance metric (`cc_abs`) for each unit.
+        
+        Returns:
+        --------
+            nucleus_merged: pandas.DataFrame
+                The primary, processed unit table with all annotations, including
+                cell type, proofreading status, brain area, cortical layer, and
+                optionally functional properties.
+            segments: pandas.DataFrame
+                A DataFrame detailing the calculated cortical layer segments,
+                including their start and end coordinates.
+        """
+        
         logging.info(f"Processing nucleus data with functional data option: '{functional_data}'.")
         try:
 
-            #Read all the downloaded data
+            # Read all the downloaded data
             logging.debug("Reading downloaded data files.")
             nucleus   = pd.read_csv(f"{self.data_storage}/raw/{self.tables['nucleus']}.csv")
             celltype  = pd.read_csv(f"{self.data_storage}/raw/{self.tables['celltype']}.csv")
             proofread = pd.read_csv(f"{self.data_storage}/raw/{self.tables['proofreading']}.csv")
             areas     = pd.read_csv(f"{self.data_storage}/raw/{self.tables['brain_areas']}.csv")
 
-            #Use a better index for the global id
+            # Use a better index for the global id
             nucleus = nucleus.rename(columns={'id' : 'nucleus_id'})
 
-            #Load functional data depending on user preferences
+            # Load functional data depending on user preferences
             if functional_data in ['best_only', 'all']: 
                 funcprops = pd.read_csv(f"{self.data_storage}/raw/{self.tables['func_props']}.csv")
             elif functional_data == 'match':
                 coreg = pd.read_csv(f"{self.data_storage}/raw/{self.tables['coreg']}.csv")
 
-            #Call all the merge functions. First, cell types
+            # Call all the merge functions. First, cell types
             logging.debug("Merging nucleus data with cell types.")
             nucleus_merged = proc.merge_nucleus_with_cell_types(nucleus, celltype)
 
-            #Then, brain area. 
+            # Then, brain area. 
             logging.debug("Merging brain area information.")
             nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
 
-            #Proofreading info
+            # Proofreading info
             logging.debug("Merging proofreading status.")
             nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread, self.version)
 
-            #Get the correct positions
+            # Get the correct positions
             logging.debug("Transforming positions.")
             nucleus_merged = proc.transform_positions(nucleus_merged)
 
-            #Segment the data and add the information about layers
+            # Segment the data and add the information about layers
             logging.debug("Segmenting volume and adding layer info.")
             segments = proc.divide_volume_into_segments(nucleus_merged)
             segments = proc.merge_segments_by_layer(segments)
 
             proc.add_layer_info(nucleus_merged, segments)
 
-            #Clean the resulting table by eliminating all multisoma objects. 
+            # Clean the resulting table by eliminating all multisoma objects. 
             logging.debug("Cleaning table: removing multisoma objects and duplicates.")
             nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
             nucleus_merged = nucleus_merged.drop_duplicates(subset='pt_root_id', keep=False)
 
 
-            #Finally, functional properties. 
+            # Finally, functional properties. 
             logging.debug("Adding functional information")
             if functional_data in ['best_only', 'all']: 
                 nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops, mode=functional_data)
