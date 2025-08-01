@@ -28,7 +28,7 @@ pip install microns-datacleaner
 import microns_datacleaner as mic
 
 #Target version and download folder
-cleaner = mic.MicronsDataCleaner(datadir = "data", version=1300, download_policy='minimum') 
+cleaner = mic.MicronsDataCleaner(datadir = "data", version=1300) 
 
 #Download the data
 cleaner.download_nucleus_data()
