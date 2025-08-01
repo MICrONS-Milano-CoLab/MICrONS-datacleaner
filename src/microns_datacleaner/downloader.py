@@ -1,5 +1,5 @@
 import pandas as pd
-import time as time
+import time as time 
 import requests
 import os
 import logging
@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def download_tables(client, path2download, tables2download):
-	"""
+    """
 	Download all the indicated tables for further processing.
 
 	Parameters:
