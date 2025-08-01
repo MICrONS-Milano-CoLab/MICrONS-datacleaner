@@ -75,6 +75,7 @@ class MicronsDataCleaner:
         # Set the tables to download according to the version
         self._configure_download_tables(version, download_policy, extra_tables)
 
+    
     def _configure_download_tables(self, version, download_policy, extra_tables):
         """
         Configures the list of tables to be downloaded based on version and policy.
@@ -131,6 +132,7 @@ class MicronsDataCleaner:
         # Eliminate any 'None' value that could have appeared
         self.tables_2_download = [x for x in self.tables_2_download if x is not None] 
 
+    
     def download_functional_fits(self, foldername="functional"):
         """
         Downloads functional tuning curves and fits from Zenodo.
@@ -192,6 +194,7 @@ class MicronsDataCleaner:
                 raise excep
         return
 
+    
     def get_table_list(self):
         """
         Retrieves a list of all available tables for the current version.
@@ -211,6 +214,7 @@ class MicronsDataCleaner:
 
         return self.client.materialize.get_tables()
 
+    
     def read_table(self, table_name):
         """
         Reads a specified table from a local CSV file into a pandas DataFrame.
@@ -231,6 +235,7 @@ class MicronsDataCleaner:
         
         return pd.read_csv(f"{self.data_storage}/raw/{table_name}") 
 
+    
     def download_nucleus_data(self):
         """
         Downloads all nucleus-related tables based on the initial configuration.
@@ -252,6 +257,7 @@ class MicronsDataCleaner:
         logging.info("Nucleus data download completed.")
         return
 
+    
     def download_tables(self, table_names):
         """
         Downloads a user-specified list of tables.
@@ -317,6 +323,7 @@ class MicronsDataCleaner:
         logging.debug("Synapse data download completed.")
         return
 
+    
     def merge_synapses(self, syn_table_name):
         """
         Merges downloaded synapse data batches into a single CSV file.
@@ -335,6 +342,7 @@ class MicronsDataCleaner:
         down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
         return
 
+    
     def merge_table(self, unit_table, new_table, columns, method="nucleus_id", how='left'):
         """
         Merges new columns from a source table into the main unit table.
@@ -364,6 +372,7 @@ class MicronsDataCleaner:
         
         return proc.merge_columns(unit_table, new_table, columns, method=method, how=how)
 
+    
     def process_nucleus_data(self, functional_data='none'):
         """
         Processes downloaded data to generate a final, annotated unit table.
