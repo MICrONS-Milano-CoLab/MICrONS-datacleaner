@@ -14,4 +14,4 @@ Please read the API below for more information in individual functions.
 
 from .filters import * 
 
-__all__ = []
+__all__ = ["filter_neurons", "filter_connections", "synapses_by_id", "remove_autapses", "connections_to", "connections_from"]

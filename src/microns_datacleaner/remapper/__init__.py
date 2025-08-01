@@ -34,4 +34,4 @@ A fully developed example is present in the `basic_tutorial`.
 """
 from .remapper import * 
 
-__all__ = []
+__all__ = ["remap_all_tables"]

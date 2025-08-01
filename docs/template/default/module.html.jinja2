@@ -93,12 +93,11 @@
                 {% endblock %}
                 {{ module_name() }}
                 {{ docstring(module) }}
-                {{ view_source_state(module) }}
-                {{ view_source_button(module) }}
-                {{ view_source_code(module) }}
             </section>
         {% endblock %}
         {% block module_contents %}
+            <hr>
+            <h2 id='api-documentation'> API Documentation </h2>
             {% for m in module.flattened_own_members if is_public(m) | trim %}
                 <section id="{{ m.qualname or m.name }}">
                     {{ member(m) }}
