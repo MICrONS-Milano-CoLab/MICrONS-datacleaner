@@ -22,14 +22,15 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 	"""
 	General function to add new columns to the nucleus table in a flexible way. 
 
-	Parameters
-	----------
-		nucleus_df: Dataframe
-			nucleus reference table
-		table: Dataframe 
-			table from which the new columns are going to be added
-		columns: list of str 
-			the list of columns from table to add to nucleus_df. If None, all are selected.
+	Parameters:
+	-----------
+	 	nucleus_df: pandas.DataFrame
+	     	The primary DataFrame to which new columns will be added.
+	    table: pandas.DataFrame
+	        The source DataFrame from which to pull the new columns.
+	    columns: list[str] or None, optional
+	        A list of column names from `table` to merge into `nucleus_df`.
+	        If None (default), all columns from `table` are used.
 		method: str 
 			How the tables will be compared to each other. If 'nucleus_id' (default), the target_id 
 			is matched to the nucleus_id. If 'functional', the session, scan and unit_id are compared. 
@@ -37,20 +38,24 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 		how: str
 			Equivalent to Panda's how argument for the merge function. Only 'inner' or 'left' are allowed, since the 
 			new columns are always added into the nucleus table.
-	Returns
-	-------
-		The nucleus table with the new columns added to it.
+   
+	Returns:
+	--------
+	    pandas.DataFrame
+            The merged DataFrame, containing the original columns from 'nucleus_df'
+            plus the selected columns from 'table', with temporary/duplicate join
+            columns removed.	
 	"""
 
-	#Things must be merged into the unit/nucleus table. Any other merge is not permitted
+	# Things must be merged into the unit/nucleus table. Any other merge is not permitted
 	if how == 'right':
 		raise ValueError("'how' can be only 'left' or 'inner' for this operation.")
 
-	#When columns are not specified, insert all the columns from the second table
+	# When columns are not specified, insert all the columns from the second table
 	if columns is None:
 		columns = list(table.columns)
 
-	#Select over which column we will match the tables 
+	# Select over which column we will match the tables 
 	if method == 'nucleus_id':
 		left_col  = ['nucleus_id']
 		right_col = ['target_id']
@@ -61,18 +66,18 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 		left_col  = ['session', 'scan_idx', 'functional_unit_id']
 		right_col = ['session', 'scan_idx', 'unit_id']
 
-	#Do the merge over the columns we are interested in. 
-	#Make sure that the columns we are merging over are included, even if user did not specify them 
+	# Do the merge over the columns we are interested in. 
+	# Make sure that the columns we are merging over are included, even if user did not specify them 
 	columns2merge = columns 
 	for col in right_col:
 		if not col in columns:
 			columns2merge.append(col)
 
-	#Merge the table tagging the columns that are common in both tables, to drop those of the second one
+	# Merge the table tagging the columns that are common in both tables, to drop those of the second one
 	merged = nucleus_df.merge(table[columns2merge], left_on=left_col, right_on=right_col, how=how, suffixes = ["", "_todrop"])
 
-	#Remove those duplicates by selecting them to drop later 
-	#First, in some methods one of the columns used to merge is still there and has to be taken out
+	# Remove those duplicates by selecting them to drop later 
+	# First, in some methods one of the columns used to merge is still there and has to be taken out
 	if method == 'nucleus_id':
 		columns2drop = ['target_id']
 	elif method == 'pt_root_id':
@@ -80,82 +85,96 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
 	elif method == 'functional':
 		columns2drop = ['unit_id']
 	
-	#Then the columns that were repeated in both tables are added to the drop list, so we can keep the one from the left one only
+	# Then the columns that were repeated in both tables are added to the drop list, so we can keep the one from the left one only
 	for c in merged.columns:
 		if c.endswith("_todrop"):
 			columns2drop.append(c)
 
-	#Return the resulting merged table 
+	# Return the resulting merged table 
 	return merged.drop(columns=columns2drop)
 
 
-
 def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
+    """
+    Merges the nucleus table with cell type classifications.
+
+    Parameters:
+    -----------
+        nucleus_df: pandas.DataFrame
+            The reference DataFrame containing nucleus IDs and positions.
+        cell_type_df: pandas.DataFrame
+            The DataFrame containing cell type classifications.
+        
+    Returns:
+    --------
+        pandas.DataFrame
+            A new DataFrame containing the merged data.
 	"""
-	Merges nucleus data with cell types
-
-	Parameters:
-	-----------
-		nucleus_df: nucleus reference table
-		cell_type_df: a classification table including cell types
-
-	Returns:
-	--------
-	    DataFrame merged with information about cell types
-	"""
-
-	#Check data validity
+	
+	# Check data validity
 	if nucleus_df.empty or cell_type_df.empty:
 		raise ValueError('Empty dataframe provided to merge_nucleus_with_cell_types')
 
-	#Perform a merge of both tables and keep only the desired columns
+	# Perform a merge of both tables and keep only the desired columns
 	merged = merge_columns(nucleus_df, cell_type_df, columns=['classification_system', 'cell_type'], how='inner')
 	return merged[['nucleus_id', 'pt_root_id', 'pt_position_x', 'pt_position_y', 'pt_position_z', 'classification_system', 'cell_type']]
 
+
 def merge_brain_area(nucleus_df, areas):
+    """
+    Merges the nucleus table with brain area information.
+
+    Parameters:
+    -----------
+        nucleus_df: pandas.DataFrame
+            The reference DataFrame containing nucleus IDs.
+        areas: pandas.DataFrame
+            The DataFrame containing brain area classifications.
+            
+    Returns:
+    --------
+        pandas.DataFrame
+            The 'nucleus_df' DataFrame, now enriched with a 'brain_area' column.
 	"""
-	Merges nucleus data with brain area information
 
-	Parameters:
-	-----------
-		nucleus_df: nucleus reference table
-		areas: a classification table including brain areas 
-
-	Returns:
-	-------
-	    DataFrame merged with brain area information
-	"""
-
-	#Check data validity
+	# Check data validity
 	if nucleus_df.empty or areas.empty:
 		raise ValueError('Empty dataframe provided to merge_brain_area')
 
-	#Perform a merge of both tables 
+	# Perform a merge of both tables 
 	merged = merge_columns(nucleus_df, areas, columns=['tag'], how='inner')
 
-	#Rename the column
+	# Rename the column
 	return merged.rename(columns={'tag' : 'brain_area'})
 
+
 def merge_proofreading_status(nucleus_df, proofreading, version):
-	"""
-	Merges nucleus data with proofreading status information
+    """
+    Merges proofreading status information into the nucleus table.
 
-	Parameters:
-	-----------
-		nucleus_df: nucleus reference table
-		proofreading: table including proofreading information 
-
+    Parameters:
+    -----------
+	    nucleus_df: pandas.DataFrame
+	        The reference DataFrame containing nucleus and 'pt_root_id' information.
+	    proofreading: pandas.DataFrame
+	        A DataFrame containing proofreading strategies for 'pt_root_id'.
+	        Must include 'strategy_axon' and 'strategy_dendrite' columns.
+	    version: int
+	        The dataset version number. This parameter is currently unused in this
+	        function's logic but is included for future compatibility.
+    
 	Returns:
-	-------
-	    DataFrame merged with proofreading information
+    --------
+    	pandas.DataFrame
+        	The 'nucleus_df' DataFrame, now including 'strategy_axon' and
+        	'strategy_dendrite' columns with NaN values filled.
 	"""
 
-
-	#Check data validity
+	# Check data validity
 	if nucleus_df.empty:
 		raise ValueError('Empty nucleus dataframe provided to merge_proofreading_status')
 
-	#Perform a merge of both tables from the desired columns 
+	# Perform a merge of both tables from the desired columns 
 	merged = merge_columns(nucleus_df, proofreading, columns=['strategy_axon', 'strategy_dendrite'], method='pt_root_id', how='left')
 
 	merged.loc[merged['strategy_axon'].isna(), 'strategy_axon']         = 'none'
@@ -165,73 +184,84 @@ def merge_proofreading_status(nucleus_df, proofreading, version):
 
 def merge_functional_properties(nucleus_df, functional, mode='best_only'):
 	"""
-	Merges nucleus data with functional properties
+ 	Merges functional properties into the nucleus DataFrame using one of several modes.
+    This function enriches a nucleus DataFrame with functional data. It operates
+    in different modes to handle various use cases, such as selecting only the
+    best-performing scan, including all scans, or simply matching functional IDs.
 
-	Parameters:
-	------------
-	    nucleus_df: DataFrame with nucleus information
-	    functional: DataFrame with functional properties
-	    use_directions: Whether to use directions for angle calculations (default: False)
-
-	Returns:
-	--------
-	    DataFrame merged with functional properties
+    Parameters:
+    -----------
+	    nucleus_df: pandas.DataFrame
+	        The primary DataFrame with nucleus information.
+	    functional: pandas.DataFrame
+	        The source DataFrame containing functional properties.
+	    mode: str, optional
+	        Defines the merging strategy. If 'best_only' (default) it keeps only
+		 	the top-performing scan. If 'all', it merges a comprehensive set of
+			properties for all available scans. If 'match', it only merges the 
+   			functional identifiers to link nuclei to their scan info.
+		  
+    Returns:
+    --------
+	    pandas.DataFrame
+	        The nucleus DataFrame, now enriched with functional data according to the
+	        specified mode.
 	"""
 
-	#Check data validity
+	# Check data validity
 	if nucleus_df.empty or functional.empty:
 		raise ValueError('Warning: Empty dataframe provided to merge_functional_properties')
 
 	match mode:
-		#The functional table is assumed to be the Digital Twin. Only the best cases are taken
+		# The functional table is assumed to be the Digital Twin. Only the best cases are taken
 		case 'best_only':
 			functional = functional.sort_values(by='cc_abs', ascending=False)
 			functional = functional.drop_duplicates(subset='target_id', keep='first')
 			functional = functional[['target_id', 'pt_root_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
 			functional['tuning_type'] = 'matched'
 
-		#The functional table is assumed to be the Digital Twin, but all scans remain
+		# The functional table is assumed to be the Digital Twin, but all scans remain
 		case 'all':
 			functional = functional[['target_id', 'pt_root_id', 'session', 'scan_idx', 'unit_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
 			functional = functional.rename(columns = {'unit_id' : 'functional_unit_id'}) 
 			functional['tuning_type'] = 'matched'
 
 
-		#The functional table is assumed to be the coregistration table, and only the functional indices are saved
+		# The functional table is assumed to be the coregistration table, and only the functional indices are saved
 		case 'match':
 			functional = functional[['target_id', 'pt_root_id', 'session', 'scan_idx', 'unit_id']] 
 			functional = functional.rename(columns = {'unit_id' : 'functional_unit_id'}) 
 			functional['tuning_type'] = 'matched'
 
-
-	#The pt_root_id was needed just to filter potential pt root = 0, after we can drop
+	# The pt_root_id was needed just to filter potential pt root = 0, after we can drop
 	functional = functional[functional['pt_root_id'] != 0]
 	functional = functional.drop(columns=['pt_root_id'])
 
-	#Do the merge
+	# Do the merge
 	return merge_columns(nucleus_df, functional, how='left')
 
 
 def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col='pt_position_z'):
     """
-    Transforms positions from voxels to μm
+    Transforms positions from voxels to μm.
     
     Parameters:
     -----------
-    df : pandas.DataFrame
-        DataFrame with position columns to transform
-    x_col : str, optional
-        Name of the x-coordinate column (default: 'pt_position_x')
-    y_col : str, optional
-        Name of the y-coordinate column (default: 'pt_position_y')
-    z_col : str, optional
-        Name of the z-coordinate column (default: 'pt_position_z')
+	    df: pandas.DataFrame
+	        DataFrame with position columns to transform.
+	    x_col: str, optional
+	        Name of the x-coordinate column (default: 'pt_position_x').
+	    y_col: str, optional
+	        Name of the y-coordinate column (default: 'pt_position_y').
+	    z_col: str, optional
+	        Name of the z-coordinate column (default: 'pt_position_z').
     
     Returns:
     --------
-    pandas.DataFrame
-        DataFrame with transformed positions
+	    pandas.DataFrame
+	        DataFrame with transformed positions.
     """
+	
     logging.debug("Transforming positions from voxels to micrometers.")
     if df.empty:
         logging.error("Empty dataframe provided to transform_positions")
@@ -258,23 +288,29 @@ def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col=
 
 def divide_volume_into_segments(cells_df, segment_size=10.0, threshold_L23 = 300):
 	"""
-	Divide the volume into segments along the y-axis.
-
+ 	Segments the brain volume along the y-axis and assigns a dominant cortical layer.
+   
 	Parameters:
-	-----------
-	    cells_df: 
-			DataFrame with cell information
-	    segment_size (optional, float) 
-			Size of each segment in micrometers. Defaults to 10.0
-	    threshold_L23 (optional, int) 
-			The layer is considered to be L1 if typical L23 neurons are below this amount 
-
+    -----------
+	    cells_df: pandas.DataFrame
+	        A DataFrame containing cell information.
+	    segment_size: float, optional
+	        The size (height) of each segment along the y-axis in micrometers,
+	        by default 10.0.
+	    threshold_L23: int, optional
+	        The minimum number of L2/3 cells required in a segment to trigger the
+	        switch from assigning 'L1' to assigning 'L2/3' as the dominant layer,
+	        by default 300. This is key for defining the L1 boundary.
+    
 	Returns:
-	--------
-	    A DataFrame with the segmented layer information
+    --------
+	    pandas.DataFrame
+	        A new DataFrame where each row represents a y-axis segment. The columns
+	        include the start/end coordinates, cell counts for each layer, and the
+	        assigned 'dominant_layer' for that segment.
 	"""
-
-	#Data validity
+	
+	# Data validity
 	if cells_df.empty:
 		raise ValueError('Warning: Empty dataframe provided to divide_volume_into_segments')
 
@@ -340,15 +376,19 @@ def divide_volume_into_segments(cells_df, segment_size=10.0, threshold_L23 = 300
 
 def merge_segments_by_layer(segments_df):
 	"""
-	Merge segments that belong to the same layer.
+ 	Merge segments that belong to the same layer.
+ 	This is useful for defining the final boundaries of each cortical layer.
 
-	Parameters:
-	-----	
-		segments_df: DataFrame of segments to be merged
-
-	Returns:
-	--------
-		DataFrame with merged layer segments
+    Parameters:
+    -----------
+	    segments_df: pandas.DataFrame
+	        A DataFrame where each row is a y-axis segment.
+		 
+    Returns:
+    --------
+	    pandas.DataFrame
+	        A new DataFrame where each row represents a single, contiguous layer
+	        block.
 	"""
 
 	if segments_df.empty:
@@ -411,17 +451,23 @@ def merge_segments_by_layer(segments_df):
 
 def add_layer_info(neurons_df, segments):
 	"""
-	Add layer information to neurons based on their position
-
-	Parameters:
-	-----------
-	    neurons_df: DataFrame with neuron information. Modified in-place.
-	    segments: DataFrame with layer segment information
-
-	Returns:
-	--------
-	    None 
+ 	Annotates a neuron DataFrame with layer information based on y-position.
+    
+    Parameters:
+    -----------
+	    neurons_df: pandas.DataFrame
+	        The DataFrame containing neuron information, which will be modified
+	        in-place.
+	    segments: pandas.DataFrame
+	        A DataFrame defining the boundaries of each cortical layer.
+		 
+    Returns:
+    --------
+	    None
+	        This function does not return a value. It modifies the 'neurons_df'
+	        DataFrame directly.
 	"""
+	
 	if neurons_df.empty or segments.empty:
 		print('Warning: Empty dataframe provided to add_layer_info')
 		return
