@@ -5,25 +5,24 @@ import os
 import logging
 from tqdm import tqdm
 
-
 def download_tables(client, path2download, tables2download):
     """
 	Download all the indicated tables for further processing.
 
 	Parameters:
-        -----------
+    -----------
 	    client: caveclient.CAVEclient 
      		The CAVEclient instance used to connect to and download from the data service.
-       	    path2download: str
+       	path2download: str
         	The local file path to the directory where the downloaded tables will be saved as CSV files.
-    	    tables2download: list[str]
+    	tables2download: list[str]
         	A list containing the names of the tables to be downloaded.
     
 	Returns:
 	-------
-            None.
+        None.
 	    	This function does not return any value. It saves the downloaded tables as files in the 
-		specified directory.
+		    specified directory.
 	"""
 	
 	logging.info(f"Starting download of nucleus data to {path2download}.")
@@ -47,7 +46,7 @@ def connectome_constructor(
 	client, presynaptic_set, postsynaptic_set, savefolder, neurs_per_steps=500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=True
 ):
 	"""
-     	Constructs a connectome subset for specified pre- and postsynaptic neurons.
+     Constructs a connectome subset for specified pre- and postsynaptic neurons.
 	This function queries the MICrONS connectomics database to extract synaptic
 	connections between a defined set of presynaptic and postsynaptic neurons.
 	
@@ -71,7 +70,7 @@ def connectome_constructor(
 	        download was interrupted, this can be set to the index of the last
 	        successfully downloaded file to resume the process.
 	    max_retries: int, optional
-		The maximum number of times to retry a query if the server fails to
+			The maximum number of times to retry a query if the server fails to
 	        respond, by default 10.
 	    drop_synapses_duplicates: bool, optional
 	        If True (default), all synapses between a given pair of neurons (i, j)
@@ -166,6 +165,7 @@ def connectome_constructor(
 		logging.error('Exceeded the max retries when trying to get synaptic connectivity. Aborting.')
 		raise TimeoutError('Exceeded the max_tries when trying to get synaptic connectivity')
 
+
 def time_format(seconds):
 	"""
 	Formats a duration in seconds into a human-readable string.
@@ -257,17 +257,17 @@ def merge_connection_tables(savefolder, filename):
 def download_functional_fits(filepath):
 	"""
  	Downloads functional fit data from a static Zenodo repository.
-    	This function retrieves a CSV file containing functional fitting data from a
-    	pre-defined Zenodo URL and saves it to the specified local path.
+    This function retrieves a CSV file containing functional fitting data from a
+    pre-defined Zenodo URL and saves it to the specified local path.
     
-    	Parameters:
-    	-----------
-    	    filepath: str
+    Parameters:
+    -----------
+    	filepath: str
         	The full path, including the desired filename, where the downloaded file will be stored.
    
-    	Returns:
-    	--------
-    	    None.
+    Returns:
+    --------
+        None.
         	This function does not return a value. It saves the content directly to a file.
 	"""
 
