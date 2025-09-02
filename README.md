@@ -1,6 +1,6 @@
 # MICrONS-datacleaner
 
-[![License](https://badgen.net/#github/license/margheritapremi/MICrONS-datacleaner)](https://badgen.net/#github/license/margheritapremi/MICrONS-datacleaner)
+[![License](https://badgen.net/github/license/MICrONS-Milano-CoLab/MICrONS-datacleaner)](https://opensource.org/licenses/MIT)
 
 This project contains tools to work with the [MICrONS Cortical MM3 dataset](https://www.microns-explorer.org/cortical-mm3), providing a **robust interface** to interact with the nucleus data. 
 
