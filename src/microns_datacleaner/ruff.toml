@@ -1,0 +1,6 @@
+line-length = 160 
+
+[format]
+quote-style = "single"
+indent-style = "tab"
+

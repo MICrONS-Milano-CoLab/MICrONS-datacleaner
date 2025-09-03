@@ -1,3 +1,13 @@
+# Custom things
+
+tests.ipynb
+test/
+data/
+
+
+
+# From Github ---- 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
