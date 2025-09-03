@@ -1,5 +1,5 @@
 """
-.. include:: ../../docs/docs_main.md
+.. include:: ../../docs-src/docs_main.md
 """
 
 __version__ = "0.1.5"

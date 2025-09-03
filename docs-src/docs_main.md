@@ -137,7 +137,7 @@ To construct the tables the package downloads results derived from the following
 To generate these docs locally in your computer, you need [pdoc](https://pdoc.dev/). Then, fromn the root directory of the repository, run
 
 ```
-pdoc -t docs/template src/microns_datacleaner/ -o docs/html
+pdoc -t docs-src/template src/microns_datacleaner/ -o docs/
 ```
 
 The docs will be generated in the `docs/html` folder in HTML format, which can be checked with the browser. You can also get docs for individual just using `src/filename.py`.
