@@ -1,6 +1,7 @@
 # MICrONS-datacleaner
 
 [![License](https://badgen.net/github/license/MICrONS-Milano-CoLab/MICrONS-datacleaner)](https://opensource.org/licenses/MIT)
+[![PyPi_Version](https://badgen.net/pypi/v/Microns-DataCleaner)](https://pypi.org/project/Microns-DataCleaner/)
 
 This project contains tools to work with the [MICrONS Cortical MM3 dataset](https://www.microns-explorer.org/cortical-mm3), providing a **robust interface** to interact with the nucleus data. 
 
@@ -63,7 +64,7 @@ If it is the first time working with the MICrONS data, we recommend you read our
 
 If you want to contribute, please read our guidelines first. Feel free to open an issue if you find any problem.  
 
-You can find a full documentation of the API and functions in the [docs](https://margheritapremi.github.io/MICrONS-datacleaner). 
+You can find a full documentation of the API and functions in the [docs](https://microns-milano-colab.github.io/MICrONS-datacleaner/). 
 
 
 ## Requirements 
@@ -103,16 +104,14 @@ Our unit table is constructed by integrating information from the following pape
 We acknowledge funding by the NextGenerationEU, in the framework of the FAIR—Future Artificial Intelligence Research project (FAIR PE00000013—CUP B43C22000800006). 
 
 
-## Generating the Docs 
-
 ## Generating the docs
 
 Go to the main folder of the repository, and run
 
 ```
-pdoc -t docs/template source/mic_datacleaner.py -o docs/html
+pdoc -t docs-src/template src/microns_datacleaner/ -o docs/
 ```
 
-The docs will be generated in the `docs/html` folder in HTML format, which can be checked with the browser. If you need the docs for all the files, and not only the class, use `source/*.py` instead of `source/mic_datacleaner.py` above.
+The docs will be generated in the `docs/` folder in HTML format, which can be checked with the browser. 
 
 
