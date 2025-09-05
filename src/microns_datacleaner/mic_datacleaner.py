@@ -31,6 +31,11 @@ class MicronsDataCleaner:
     """
     version = 1300
 
+    """
+    Supported 
+    """
+    SUPPORTED_VERSIONS = [1078, 1181, 1300, 1412, 1507]
+
 
     def __init__(self, datadir="data", version=1300, download_policy='minimum', extra_tables=[]):
         """
@@ -101,14 +106,22 @@ class MicronsDataCleaner:
         
         self.tables = {}
 
+        self.tables['nucleus']      = "nucleus_detection_v0"
+        self.tables['proofreading'] = "proofreading_status_and_strategy"
+        self.tables['brain_areas']  = "nucleus_functional_area_assignment"
+
         match version:
-            case 1300:
-                self.tables['nucleus']      = "nucleus_detection_v0"
+            case 1078 | 1181 | 1300 | 1412:
                 self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
-                self.tables['proofreading'] = "proofreading_status_and_strategy"
-                self.tables['brain_areas']  = "nucleus_functional_area_assignment"
                 self.tables['func_props']   = "functional_properties_v3_bcm"
                 self.tables['coreg']        = "coregistration_manual_v4"
+            case 1507: 
+                self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
+                self.tables['func_props']   = "digital_twin_properties_bcm_coreg_v4"
+                self.tables['coreg']        = "coregistration_manual_v4"
+            case _:
+                raise ValueError(f"The selected version is not supported. Please use one of the following: {self.SUPPORTED_VERSIONS}")
+
 
         # Set the tables that we will need to download.
         match download_policy:
