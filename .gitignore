@@ -3,6 +3,7 @@
 tests.ipynb
 test/
 data/
+*.h5
 
 
 

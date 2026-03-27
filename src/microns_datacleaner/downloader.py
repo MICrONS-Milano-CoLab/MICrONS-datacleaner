@@ -254,11 +254,11 @@ def merge_connection_tables(savefolder, filename):
     return
 
 
-def download_functional_fits(filepath):
+def download_functional_data(filepath):
     """
-    Downloads functional fit data from a static Zenodo repository.
-    This function retrieves a CSV file containing functional fitting data from a
-    pre-defined Zenodo URL and saves it to the specified local path.
+    Downloads functional data from a static repository.
+    This function retrieves a H5 file containing functional data from a
+    predefined URL
     
     Parameters:
     -----------
@@ -272,7 +272,20 @@ def download_functional_fits(filepath):
     """
 
     # TO DO
-    response = requests.get("URL TO OUR FILE IN ZENODO")
+    url = "https://huggingface.co/datasets/NeuroBLab/MICrONS/resolve/main/microns.h5"
 
-    with open(f"{filepath}.csv", mode="wb") as file:
-        file.write(response.content)
+    #Avoid filling too much RAM, downloading little by little
+    with requests.get(url, stream=True) as response:
+        #Stop and raise an eror if any problem arises
+        response.raise_for_status()
+
+        #Total file size
+        total = int(response.headers.get('content-length', 0))
+
+        #Write in chunks, show progress with tqdm
+        with open(f"{filepath}.h5", mode="wb") as file, tqdm(total=total, unit='B', unit_scale=True) as bar:
+            for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1 MB
+                if chunk:
+                    file.write(chunk)
+                    bar.update(len(chunk))
+

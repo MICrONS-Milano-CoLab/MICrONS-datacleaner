@@ -34,10 +34,10 @@ class MicronsDataCleaner:
     """
     Supported 
     """
-    SUPPORTED_VERSIONS = [1078, 1181, 1300, 1412, 1507]
+    SUPPORTED_VERSIONS = [1078, 1181, 1300, 1412, 1507, 1621, 1718]
 
 
-    def __init__(self, datadir="data", version=1300, download_policy='minimum', extra_tables=[]):
+    def __init__(self, datadir="data", version=1621, download_policy='minimum', extra_tables=[]):
         """
         Initialize the class and makes sure subfolders to download exist. Configures the tables to be downloaded (except synapses) via
         a download policy.
@@ -115,8 +115,13 @@ class MicronsDataCleaner:
                 self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
                 self.tables['func_props']   = "functional_properties_v3_bcm"
                 self.tables['coreg']        = "coregistration_manual_v4"
-            case 1507: 
+            case 1507 | 1621: 
                 self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
+                self.tables['func_props']   = "digital_twin_properties_bcm_coreg_v4"
+                self.tables['coreg']        = "coregistration_manual_v4"
+            case 1718: 
+                #Maybe it would be interesting to use cell_type_multifeature_combo instead?
+                self.tables['celltype']     = "aibs_metamodel_celltypes_v661_corrections"
                 self.tables['func_props']   = "digital_twin_properties_bcm_coreg_v4"
                 self.tables['coreg']        = "coregistration_manual_v4"
             case _:
@@ -146,13 +151,9 @@ class MicronsDataCleaner:
         self.tables_2_download = [x for x in self.tables_2_download if x is not None] 
 
     
-    def download_functional_fits(self, foldername="functional"):
+    def download_functional_data(self):
         """
-        Downloads functional tuning curves and fits from Zenodo.
-        This convenience method downloads a pre-processed data file containing
-        functional tuning curves and their fits. The data is hosted on Zenodo
-        and has been specifically prepared for use with this package. The method
-        handles the creation of the destination folder before initiating the download.
+        Downloads functional data in a compressed format.
         
         Parameters:
         -----------
@@ -171,8 +172,8 @@ class MicronsDataCleaner:
 
         """
 
-        os.makedirs(f"{self.homedir}/{self.datadir}/{foldername}", exist_ok=True)
-        down.download_functional_fits(f"{self.homedir}/{self.datadir}/{foldername}/tuning_curves_fitted_v1.csv")
+        os.makedirs(f"{self.homedir}/{self.datadir}/functional", exist_ok=True)
+        down.download_functional_data(f"{self.homedir}/{self.datadir}/functional/microns_functional.h5")
 
 
     def _initialize_client(self, version):

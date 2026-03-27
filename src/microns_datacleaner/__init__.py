@@ -2,8 +2,9 @@
 .. include:: ../../docs-src/docs_main.md
 """
 
-__version__ = "0.1.5"
+__version__ = "0.2.0"
 
 from .mic_datacleaner import MicronsDataCleaner
+from .functionalreader import MicronsFunctionalReader
 
-__all__ = ["MicronsDataCleaner", "filters", "remapper"]
+__all__ = ["MicronsDataCleaner", "MicronsFunctionalReader", "filters", "remapper"]
