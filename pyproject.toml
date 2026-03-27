@@ -26,5 +26,6 @@ dependencies = [
     "pandas",
     "caveclient",
     "tqdm", 
-    "scipy"
+    "scipy",
+    "h5py"
 ]
