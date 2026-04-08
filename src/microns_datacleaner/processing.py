@@ -5,13 +5,30 @@ from standard_transform import minnie_ds
 from scipy.stats import circmean
 from tqdm import tqdm
 
-LAYER_CELL_TYPES = {
+
+CELL_TYPES_BAYLOR = {
     'L1': ['NGC', 'BPC', 'MC', 'BC'],
     'L2/3': ['23P'],
     'L4': ['4P'],
     'L5': ['5P-IT', '5P-ET', '5P-NP'],
     'L6': ['6P-IT', '6P-CT'],
     'WM': ['Oligo', 'OPC', 'Pericyte'],
+}
+"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
+
+CELL_TYPES_MULTI = {
+    'L1': ['L1', 'NGC', 'MC'],
+    'L2/3': ['L2IT', 'L3IT'],
+    'L4': ['L4IT'],
+    'L5': ['L5IT', 'L5ET', 'L5NP'],
+    'L6': ['L6IT', 'L6CT'],
+    'WM': [],
+}
+"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
+
+LAYER_CELL_TYPES = {
+    "aibs_metamodel_celltypes_v661":CELL_TYPES_BAYLOR,
+    "cell_type_multifeature_combo":CELL_TYPES_MULTI
 }
 """Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
 
@@ -286,7 +303,7 @@ def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col=
     return df
 
 
-def divide_volume_into_segments(cells_df, segment_size=10.0, threshold_L23 = 300):
+def divide_volume_into_segments(cells_df, table_used, segment_size=10.0, threshold_L23 = 300):
     """
     Segments the brain volume along the y-axis and assigns a dominant cortical layer.
    
@@ -333,7 +350,7 @@ def divide_volume_into_segments(cells_df, segment_size=10.0, threshold_L23 = 300
         segment_cells = cells_df[(cells_df['pt_position_y'] >= y_start) & (cells_df['pt_position_y'] < y_end)]
 
         layer_counts = {}
-        for layer_name, cell_types in LAYER_CELL_TYPES.items():
+        for layer_name, cell_types in LAYER_CELL_TYPES[table_used].items():
             layer_cells = segment_cells[segment_cells['cell_type'].isin(cell_types)]
             layer_counts[layer_name] = len(layer_cells)
 

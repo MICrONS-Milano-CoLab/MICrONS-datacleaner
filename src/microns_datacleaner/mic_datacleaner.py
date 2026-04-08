@@ -121,7 +121,7 @@ class MicronsDataCleaner:
                 self.tables['coreg']        = "coregistration_manual_v4"
             case 1718: 
                 #Maybe it would be interesting to use cell_type_multifeature_combo instead?
-                self.tables['celltype']     = "aibs_metamodel_celltypes_v661_corrections"
+                self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
                 self.tables['func_props']   = "digital_twin_properties_bcm_coreg_v4"
                 self.tables['coreg']        = "coregistration_manual_v4"
             case _:
@@ -458,7 +458,7 @@ class MicronsDataCleaner:
 
             # Segment the data and add the information about layers
             logging.debug("Segmenting volume and adding layer info.")
-            segments = proc.divide_volume_into_segments(nucleus_merged)
+            segments = proc.divide_volume_into_segments(nucleus_merged, self.tables['celltype'])
             segments = proc.merge_segments_by_layer(segments)
 
             proc.add_layer_info(nucleus_merged, segments)
