@@ -7,36 +7,6 @@ from tqdm import tqdm
 from importlib import resources
 import yaml
 
-
-CELL_TYPES_BAYLOR = {
-    'L1': ['NGC', 'BPC', 'MC', 'BC'],
-    'L2/3': ['23P'],
-    'L4': ['4P'],
-    'L5': ['5P-IT', '5P-ET', '5P-NP'],
-    'L6': ['6P-IT', '6P-CT'],
-    'WM': ['Oligo', 'OPC', 'Pericyte'],
-}
-"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
-
-CELL_TYPES_MULTI = {
-    'L1': ['L1', 'NGC', 'MC'],
-    'L2/3': ['L2IT', 'L3IT'],
-    'L4': ['L4IT'],
-    'L5': ['L5IT', 'L5ET', 'L5NP'],
-    'L6': ['L6IT', 'L6CT'],
-    'WM': [],
-}
-"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
-
-LAYER_CELL_TYPES_OLD = {
-    "aibs_metamodel_celltypes_v661":CELL_TYPES_BAYLOR,
-    "cell_type_multifeature_combo":CELL_TYPES_MULTI
-}
-"""Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
-
-LAYER_ORDER = ['L1', 'L2/3', 'L4', 'L5', 'L6', 'WM']
-"""Names of the layers."""
-
 def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='left'):
     """
     General function to add new columns to the nucleus table in a flexible way. 

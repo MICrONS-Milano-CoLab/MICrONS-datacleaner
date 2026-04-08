@@ -106,7 +106,12 @@ class MicronsDataCleaner:
                 `self.tables` and `self.tables_2_download` in-place.
         """
         
+        #List of tables we need 
         self.tables = {}
+
+        #Store a list of tables used to correct the information in our final table, which need to be
+        #downloaded from microns
+        self.info_to_correct = {}
 
         self.tables['nucleus']      = "nucleus_detection_v0"
         self.tables['proofreading'] = "proofreading_status_and_strategy"
@@ -120,16 +125,25 @@ class MicronsDataCleaner:
         if version in versiontables:
             tablenames = versiontables[version] 
             for key in tablenames:
-                self.tables[key] = tablenames[key] 
+                #Add all the normal keys.
+                if key != 'corrections':
+                    self.tables[key] = tablenames[key] 
+                #Corrections to the tables need more care...
+                else:
+                    #tables2correct is a dict; key is the table containing corrections 
+                    #Value is a list indicating the columns to be corrected from that table 
+                    self.info_to_correct = tablenames[key]
         else:
             raise ValueError(f"The selected version is not supported. Please use one of the following: {self.SUPPORTED_VERSIONS}")
+
+
 
 
         # Set the tables that we will need to download.
         match download_policy:
             # Default. Gets only the ones we will use to generate our unit table 
             case 'minimum':
-                self.tables_2_download = list(self.tables.values()) 
+                self.tables_2_download = list(self.tables.values()) + list(self.info_to_correct.keys())
 
             # All gets all available tables for this version
             case 'all':
@@ -137,7 +151,7 @@ class MicronsDataCleaner:
 
             # Get the minimum ones + the tables specified in the extra array
             case 'extra':
-                self.tables_2_download = list(self.tables.values()) + extra_tables 
+                self.tables_2_download = list(self.tables.values()) + list(self.info_to_correct.keys()) + extra_tables 
             
             # Any other string is an error
             case _: 
@@ -386,6 +400,43 @@ class MicronsDataCleaner:
         
         return proc.merge_columns(unit_table, new_table, columns, method=method, how=how)
 
+    def _patch_tables(self, unit_table):
+        """
+        Applies a corrections present in the info_to_correct tables downloaded from MICrONs 
+
+        Parameters:
+        -----------
+            unit_table: pandas.DataFrame
+                The primary DataFrame to which new columns will be added.
+        
+        Returns:
+        --------
+            None 
+                The table is modified in-place 
+        """
+
+
+        #Apply a patch for all corrections that should be taken
+        unit_table = unit_table.set_index('nucleus_id')
+
+        for key in self.info_to_correct:
+
+            #Load the table containing the corrections
+            corrtablename   = key 
+            corrtable = pd.read_csv(f"{self.data_storage}/raw/{corrtablename}.csv")
+
+
+            #Substitute the values in our unit table by the new table
+            columns2correct = self.info_to_correct[key]
+            corrtable = corrtable.set_index('target_id')
+
+            unit_table.update(corrtable[columns2correct])
+        
+        return unit_table.reset_index()
+
+
+
+
     
     def process_nucleus_data(self, functional_data='none'):
         """
@@ -453,18 +504,11 @@ class MicronsDataCleaner:
             logging.debug("Transforming positions.")
             nucleus_merged = proc.transform_positions(nucleus_merged)
 
-            # Segment the data and add the information about layers
-            logging.debug("Segmenting volume and adding layer info.")
-            segments = proc.divide_volume_into_segments(nucleus_merged, self.tables['celltype'])
-            segments = proc.merge_segments_by_layer(segments)
-
-            proc.add_layer_info(nucleus_merged, segments)
 
             # Clean the resulting table by eliminating all multisoma objects. 
             logging.debug("Cleaning table: removing multisoma objects and duplicates.")
             nucleus_merged = nucleus_merged[nucleus_merged['pt_root_id'] > 0]
             nucleus_merged = nucleus_merged.drop_duplicates(subset='pt_root_id', keep=False)
-
 
             # Finally, functional properties. 
             logging.debug("Adding functional information")
@@ -476,6 +520,16 @@ class MicronsDataCleaner:
                 nucleus_merged.loc[nucleus_merged['tuning_type'].isna(), 'tuning_type'] = 'not_matched'
             else:
                 nucleus_merged['tuning_type'] = 'not_matched'
+
+            #Patch tables if there was information to patch
+            nucleus_merged = self._patch_tables(nucleus_merged)
+
+            # Segment the data and add the information about layers
+            logging.debug("Segmenting volume and adding layer info.")
+            segments = proc.divide_volume_into_segments(nucleus_merged, self.tables['celltype'])
+            segments = proc.merge_segments_by_layer(segments)
+
+            proc.add_layer_info(nucleus_merged, segments)
 
             return nucleus_merged, segments
 

@@ -30,6 +30,7 @@
 
 1718:
   celltype          : aibs_metamodel_celltypes_v661
-  celltype_corrs    : aibs_metamodel_celltypes_v661_corrections
   func_props        : digital_twin_properties_bcm_coreg_v4
   coreg             : coregistration_manual_v4
+  corrections:
+    aibs_metamodel_celltypes_v661_corrections : [classification_system, cell_type]

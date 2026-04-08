@@ -2,7 +2,7 @@
 .. include:: ../../docs-src/docs_main.md
 """
 
-__version__ = "0.2.0.1"
+__version__ = "0.2.1"
 
 from .mic_datacleaner import MicronsDataCleaner
 from .functionalreader import MicronsFunctionalReader
