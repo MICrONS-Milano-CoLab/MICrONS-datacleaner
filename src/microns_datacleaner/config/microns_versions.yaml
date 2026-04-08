@@ -1,0 +1,35 @@
+1078:
+  celltype    : aibs_metamodel_celltypes_v661
+  func_props  : functional_properties_v3_bcm
+  coreg       : coregistration_manual_v4
+
+1181:
+  celltype    : aibs_metamodel_celltypes_v661
+  func_props  : functional_properties_v3_bcm
+  coreg       : coregistration_manual_v4
+
+1300:
+  celltype    : aibs_metamodel_celltypes_v661
+  func_props  : functional_properties_v3_bcm
+  coreg       : coregistration_manual_v4
+
+1412:
+  celltype    : aibs_metamodel_celltypes_v661
+  func_props  : functional_properties_v3_bcm
+  coreg       : coregistration_manual_v4
+
+1507:
+  celltype    : aibs_metamodel_celltypes_v661
+  func_props  : digital_twin_properties_bcm_coreg_v4
+  coreg       : coregistration_manual_v4
+
+1621:
+  celltype    : aibs_metamodel_celltypes_v661
+  func_props  : digital_twin_properties_bcm_coreg_v4
+  coreg       : coregistration_manual_v4
+
+1718:
+  celltype          : aibs_metamodel_celltypes_v661
+  celltype_corrs    : aibs_metamodel_celltypes_v661_corrections
+  func_props        : digital_twin_properties_bcm_coreg_v4
+  coreg             : coregistration_manual_v4

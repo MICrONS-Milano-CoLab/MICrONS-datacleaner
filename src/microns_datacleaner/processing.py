@@ -4,6 +4,8 @@ import logging
 from standard_transform import minnie_ds
 from scipy.stats import circmean
 from tqdm import tqdm
+from importlib import resources
+import yaml
 
 
 CELL_TYPES_BAYLOR = {
@@ -26,7 +28,7 @@ CELL_TYPES_MULTI = {
 }
 """Dictionary, whose keys are LAYER_ORDER. Each element includes a list with the cell types in each layer"""
 
-LAYER_CELL_TYPES = {
+LAYER_CELL_TYPES_OLD = {
     "aibs_metamodel_celltypes_v661":CELL_TYPES_BAYLOR,
     "cell_type_multifeature_combo":CELL_TYPES_MULTI
 }
@@ -342,6 +344,12 @@ def divide_volume_into_segments(cells_df, table_used, segment_size=10.0, thresho
 
     l23_assigned = False
 
+    #Get layer cell types from a configuration YAML file, so it matches the cell type table used
+    with resources.files("microns_datacleaner.config").joinpath("celltypes.yaml").open("r") as f:
+        celltypesdata = yaml.safe_load(f)
+
+    LAYER_CELL_TYPES = celltypesdata[table_used]
+
     # Process each segment
     for i in range(len(y_bins) - 1):
         y_start, y_end = y_bins[i], y_bins[i + 1]
@@ -350,7 +358,7 @@ def divide_volume_into_segments(cells_df, table_used, segment_size=10.0, thresho
         segment_cells = cells_df[(cells_df['pt_position_y'] >= y_start) & (cells_df['pt_position_y'] < y_end)]
 
         layer_counts = {}
-        for layer_name, cell_types in LAYER_CELL_TYPES[table_used].items():
+        for layer_name, cell_types in LAYER_CELL_TYPES.items():
             layer_cells = segment_cells[segment_cells['cell_type'].isin(cell_types)]
             layer_counts[layer_name] = len(layer_cells)
 

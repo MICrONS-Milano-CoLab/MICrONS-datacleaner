@@ -9,6 +9,8 @@ from . import downloader as down
 from . import processing as proc
 
 import requests
+from importlib import resources
+import yaml
 
 
 class MicronsDataCleaner:
@@ -110,22 +112,17 @@ class MicronsDataCleaner:
         self.tables['proofreading'] = "proofreading_status_and_strategy"
         self.tables['brain_areas']  = "nucleus_functional_area_assignment"
 
-        match version:
-            case 1078 | 1181 | 1300 | 1412:
-                self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
-                self.tables['func_props']   = "functional_properties_v3_bcm"
-                self.tables['coreg']        = "coregistration_manual_v4"
-            case 1507 | 1621: 
-                self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
-                self.tables['func_props']   = "digital_twin_properties_bcm_coreg_v4"
-                self.tables['coreg']        = "coregistration_manual_v4"
-            case 1718: 
-                #Maybe it would be interesting to use cell_type_multifeature_combo instead?
-                self.tables['celltype']     = "aibs_metamodel_celltypes_v661"
-                self.tables['func_props']   = "digital_twin_properties_bcm_coreg_v4"
-                self.tables['coreg']        = "coregistration_manual_v4"
-            case _:
-                raise ValueError(f"The selected version is not supported. Please use one of the following: {self.SUPPORTED_VERSIONS}")
+        #Load default configurations for each version from a YAML file
+        with resources.files("microns_datacleaner.config").joinpath("microns_versions.yaml").open("r") as f:
+            versiontables = yaml.safe_load(f)
+
+        #If the version is supported, then set all tables
+        if version in versiontables:
+            tablenames = versiontables[version] 
+            for key in tablenames:
+                self.tables[key] = tablenames[key] 
+        else:
+            raise ValueError(f"The selected version is not supported. Please use one of the following: {self.SUPPORTED_VERSIONS}")
 
 
         # Set the tables that we will need to download.
