@@ -18,13 +18,28 @@ class MicronsFunctionalReader:
     """
     Subfolder aimed to contain the downloaded data
     """
-    filepath = "functional/microns_functional.h5" 
+    filename = "functional/microns_functional.h5" 
 
-    def __init__(self, datadir="data"):
+    def __init__(self, datadir="data", path=None):
         """
-        Reads the data at the place where it should have been downloaded 
+        Open the functional data. 
+
+        Parameters
+        ----------
+            datadir : str,
+                defaults to 'data'; the folder where the data is stored. Should coincide with the one in the DataCleaner class. 
+                If the functional data was downloaded by the the package, specifying the datadir is enough to find the file. 
+            
+            path : str,
+                defaults to None. This argument should point to the .h5 file directly. When specified, it overrides the datadir argument. 
+
         """
-        self.file_path = f"{self.homedir}/{datadir}/{self.filepath}"
+
+        if path is not None:
+            self.file_path = path
+        else:
+            self.file_path = f"{self.homedir}/{datadir}/{self.filename}"
+        
         self.f = h5py.File(self.file_path, 'r')
 
     def close(self):
@@ -121,7 +136,8 @@ class MicronsFunctionalReader:
         """
 
         h_key = self._encode_hash(condition_hash)
-        clip, stim_type = self.get_video_data(condition_hash)
+        vdata = self.get_video_data(condition_hash)
+        clip, stim_type = vdata['clip'], vdata['stim_type']
         if clip is None:
             return None
 
@@ -177,19 +193,36 @@ class MicronsFunctionalReader:
 
         Returns:
         --------
-            video_data : np.array  
-                Numpy array with the video data in format frames x width x height
-            stim_type : str
-                Type of stimulation: Monet2, Trippy or Clip
+            video_data : dict 
+                Dictionary with all the properties of the requested video. `clip` contains frames in FxWxH format and `stim_type` the stimulus type. 
+                For Monet2 trials, the `directions` and `onsets` are also available. For Clip trials, `movie_name` and short name are included. 
+                Other constants of the videos are also available.  
         """
         h_key = self._encode_hash(condition_hash)
         video_path = f"videos/{h_key}"
         if video_path not in self.f:
             return None, None
         vid_grp = self.f[video_path]
-        clip = vid_grp['clip'][:]
-        stim_type = vid_grp.attrs.get('type', 'Unknown')
-        return clip, stim_type
+        result = {}
+        result['clip']      = vid_grp['clip'][:]
+        result['stim_type'] =  vid_grp.attrs.get('type', 'Unknown')
+
+        match result['stim_type']:
+            case "Clip":
+                result['movie_name']       = vid_grp.attrs.get("movie_name")
+                result['short_movie_name'] = vid_grp.attrs.get("short_movie_name")
+            case "Monet2":
+                result['directions']       = vid_grp["directions"][:]
+                result['onsets']           = vid_grp["onsets"][:]
+                result['ori_coherence']    = vid_grp.attrs.get("ori_coherence")
+            case "Trippy":
+                result['temp_freq']        = vid_grp.attrs.get("temp_freq")
+                result['spatial_freq']     = vid_grp.attrs.get("spatial_freq")
+
+        result['duration']         = vid_grp.attrs.get("duration")
+        result['fps']              = vid_grp.attrs.get("fps")
+
+        return result
 
     def get_video_type(self, condition_hash):
         """

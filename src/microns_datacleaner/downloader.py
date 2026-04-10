@@ -135,6 +135,10 @@ def connectome_constructor(
                     if drop_synapses_duplicates:
                         sub_syn_df = sub_syn_df.groupby(['pre_pt_root_id', 'post_pt_root_id']).sum().reset_index()
 
+                    #Filter the columns we want. Sometimes there are linked columns that are also downloaded
+                    sub_syn_df = sub_syn_df[cols_2_download]  
+
+                    #Save this part
                     sub_syn_df.to_csv(f'{savefolder}/connections_table_{part}.csv', index=False)
                     logging.info(f"Successfully saved connections_table_{part}.csv")				
                     part += 1

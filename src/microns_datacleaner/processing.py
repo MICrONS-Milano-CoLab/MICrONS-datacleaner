@@ -206,7 +206,7 @@ def merge_functional_properties(nucleus_df, functional, mode='best_only'):
         case 'best_only':
             functional = functional.sort_values(by='cc_abs', ascending=False)
             functional = functional.drop_duplicates(subset='target_id', keep='first')
-            functional = functional[['target_id', 'pt_root_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
+            functional = functional[['target_id', 'pt_root_id', 'session', 'scan_idx', 'unit_id', 'pref_ori', 'pref_dir', 'gOSI', 'gDSI', 'cc_abs']]
             functional['tuning_type'] = 'matched'
 
         # The functional table is assumed to be the Digital Twin, but all scans remain

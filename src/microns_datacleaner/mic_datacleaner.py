@@ -31,7 +31,7 @@ class MicronsDataCleaner:
     """
     Version of the client we are using
     """
-    version = 1300
+    version = 1718 
 
     """
     Supported 
