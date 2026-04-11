@@ -27,5 +27,6 @@ dependencies = [
     "caveclient",
     "tqdm", 
     "scipy",
+    "yaml",
     "h5py"
 ]
