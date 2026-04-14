@@ -54,9 +54,9 @@ def filter_neurons(units, layer=None, brain_area=None, cell_type=None, tuning=No
 
     # Same for cell types
     if type(cell_type) is str:
-        query += "(cell_type == @cell_type)&"
+        query += "(classification_system == @cell_type)&"
     elif type(cell_type) is list:
-        query += "(cell_type in @cell_type)&"
+        query += "(classification_system in @cell_type)&"
 
     # Same for brain area
     if type(brain_area) is str:
@@ -200,7 +200,7 @@ def remove_autapses(connections):
             A new DataFrame containing all synaptic connections except autapses.
     """
    
-    return connections[connections["pre_id"] != connections["post_id"]]
+    return connections[connections["pre_pt_root_id"] != connections["post_pt_root_id"]]
 
 
 def connections_to(post_id, connections, only_id=True):
@@ -230,9 +230,9 @@ def connections_to(post_id, connections, only_id=True):
     """
 
     if only_id:
-        return connections.loc[connections["post_id"] == post_id, "pre_id"]
+        return connections.loc[connections["post_pt_root_id"] == post_id, "pre_pt_root_id"]
     else:
-        return connections[connections["post_id"] == post_id]
+        return connections[connections["post_pt_root_id"] == post_id]
 
 
 def connections_from(pre_id, connections, only_id=True):
@@ -262,8 +262,8 @@ def connections_from(pre_id, connections, only_id=True):
     """
 
     if only_id:
-        return connections.loc[connections["pre_id"] == pre_id, "post_id"]
+        return connections.loc[connections["pre_pt_root_id"] == pre_id, "post_pt_root_id"]
     else:
-        return connections.loc[connections["pre_id"] == pre_id]
+        return connections.loc[connections["pre_pt_root_id"] == pre_id]
 
     
