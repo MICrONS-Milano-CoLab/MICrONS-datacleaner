@@ -287,7 +287,7 @@ def download_functional_data(filepath):
         total = int(response.headers.get('content-length', 0))
 
         #Write in chunks, show progress with tqdm
-        with open(f"{filepath}.h5", mode="wb") as file, tqdm(total=total, unit='B', unit_scale=True) as bar:
+        with open(f"{filepath}", mode="wb") as file, tqdm(total=total, unit='B', unit_scale=True) as bar:
             for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1 MB
                 if chunk:
                     file.write(chunk)
