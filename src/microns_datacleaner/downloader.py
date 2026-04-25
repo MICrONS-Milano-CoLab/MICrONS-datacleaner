@@ -104,9 +104,12 @@ def connectome_constructor(
     # If we are not getting individual synapses, the best thing we can do is to not ask for positions, which is very heavy
     if drop_synapses_duplicates:
         cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size']
+        cols_2_select  = cols_2_download
         logging.info("Dropping synapse duplicates and excluding position data for lighter queries.")	
     else:
         cols_2_download = ['pre_pt_root_id', 'post_pt_root_id', 'size', 'ctr_pt_position']
+        #Since we are splitting position, when we select the columns we need to have the full name
+        cols_2_select = ['pre_pt_root_id', 'post_pt_root_id', 'size'] + [f'ctr_pt_position_{A}' for A in 'xyz'] 
     part = start_index
 
     # Progress bar over the amount of chunks to download
@@ -136,7 +139,7 @@ def connectome_constructor(
                         sub_syn_df = sub_syn_df.groupby(['pre_pt_root_id', 'post_pt_root_id']).sum().reset_index()
 
                     #Filter the columns we want. Sometimes there are linked columns that are also downloaded
-                    sub_syn_df = sub_syn_df[cols_2_download]  
+                    sub_syn_df = sub_syn_df[cols_2_select]  
 
                     #Save this part
                     sub_syn_df.to_csv(f'{savefolder}/connections_table_{part}.csv', index=False)
