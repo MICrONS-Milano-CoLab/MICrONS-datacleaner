@@ -5,6 +5,9 @@
 
 This project contains tools to work with the [MICrONS Cortical MM3 dataset](https://www.microns-explorer.org/cortical-mm3), providing a **robust interface** to interact with the nucleus data. 
 
+> From version 0.3.0.0, the package will be renamed to microns-combiner in order to better reflect its usage. 
+> Latest version with name 'datacleaner' will be 0.2.  
+
 ## Key features 
 
 - **Simple interface** to download and keep organized anatomical data via CAVEClient. 
