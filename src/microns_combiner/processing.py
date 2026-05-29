@@ -315,7 +315,7 @@ def divide_volume_into_segments(cells_df, table_used, segment_size=10.0, thresho
     l23_assigned = False
 
     #Get layer cell types from a configuration YAML file, so it matches the cell type table used
-    with resources.files("microns_datacleaner.config").joinpath("celltypes.yaml").open("r") as f:
+    with resources.files("microns_combiner.config").joinpath("celltypes.yaml").open("r") as f:
         celltypesdata = yaml.safe_load(f)
 
     LAYER_CELL_TYPES = celltypesdata[table_used]

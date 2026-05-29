@@ -1,7 +1,7 @@
-# MICrONS-datacleaner
+# MICrONS-Combiner
 
-[![License](https://badgen.net/github/license/MICrONS-Milano-CoLab/MICrONS-datacleaner)](https://opensource.org/licenses/MIT)
-[![PyPi_Version](https://badgen.net/pypi/v/Microns-DataCleaner)](https://pypi.org/project/Microns-DataCleaner/)
+[![License](https://badgen.net/github/license/MICrONS-Milano-CoLab/MICrONS-combiner)](https://opensource.org/licenses/MIT)
+[![PyPi_Version](https://badgen.net/pypi/v/Microns-combiner)](https://pypi.org/project/Microns-combiner/)
 
 This project contains tools to work with the [MICrONS Cortical MM3 dataset](https://www.microns-explorer.org/cortical-mm3), providing a **robust interface** to interact with the nucleus data. 
 
@@ -20,7 +20,7 @@ This project contains tools to work with the [MICrONS Cortical MM3 dataset](http
 ## Install 📥
 
 ```bash
-pip install microns-datacleaner
+pip install microns-combiner
 ```
 
 ## Using the package ⏩
@@ -29,10 +29,10 @@ pip install microns-datacleaner
 
 ```python
 #Import the lib
-import microns_datacleaner as mic
+import microns_combiner as mic
 
 #Target version and download folder
-cleaner = mic.MicronsDataCleaner(datadir = "data", version=1300) 
+cleaner = mic.MicronsCombiner(datadir = "data", version=1300) 
 
 #Download the data
 cleaner.download_nucleus_data()
@@ -67,7 +67,7 @@ If it is the first time working with the MICrONS data, we recommend you read our
 
 If you want to contribute, please read our guidelines first. Feel free to open an issue if you find any problem.  
 
-You can find a full documentation of the API and functions in the [docs](https://microns-milano-colab.github.io/MICrONS-datacleaner/). 
+You can find a full documentation of the API and functions in the [docs](https://microns-milano-colab.github.io/MICrONS-combiner/). 
 
 
 ## Requirements 
@@ -112,7 +112,7 @@ We acknowledge funding by the NextGenerationEU, in the framework of the FAIR—F
 Go to the main folder of the repository, and run
 
 ```
-pdoc -t docs-src/template src/microns_datacleaner/ -o docs/
+pdoc -t docs-src/template src/microns_combiner/ -o docs/
 ```
 
 The docs will be generated in the `docs/` folder in HTML format, which can be checked with the browser. 

@@ -13,7 +13,7 @@ from importlib import resources
 import yaml
 
 
-class MicronsDataCleaner:
+class MicronsCombiner:
     """
     The main class to download and clean data from the Microns Dataset. 
     """
@@ -118,7 +118,7 @@ class MicronsDataCleaner:
         self.tables['brain_areas']  = "nucleus_functional_area_assignment"
 
         #Load default configurations for each version from a YAML file
-        with resources.files("microns_datacleaner.config").joinpath("microns_versions.yaml").open("r") as f:
+        with resources.files("microns_combiner.config").joinpath("microns_versions.yaml").open("r") as f:
             versiontables = yaml.safe_load(f)
 
         #If the version is supported, then set all tables

@@ -27,7 +27,7 @@ jobs:
       - run: pip install pdoc
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc -t docs-src/template src/microns_datacleaner/ -o docs/ 
+      - run: pdoc -t docs-src/template src/microns_combiner/ -o docs/ 
 
       - uses: actions/upload-pages-artifact@v3
         with:

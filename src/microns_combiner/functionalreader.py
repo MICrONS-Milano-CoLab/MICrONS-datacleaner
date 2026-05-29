@@ -27,7 +27,7 @@ class MicronsFunctionalReader:
         Parameters
         ----------
             datadir : str,
-                defaults to 'data'; the folder where the data is stored. Should coincide with the one in the DataCleaner class. 
+                defaults to 'data'; the folder where the data is stored. Should coincide with the one in the Combiner class. 
                 If the functional data was downloaded by the the package, specifying the datadir is enough to find the file. 
             
             path : str,

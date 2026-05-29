@@ -4,8 +4,8 @@ build-backend = "poetry.core.masonry.api"
 
 
 [project]
-name = "Microns-DataCleaner"
-version = "0.2.1.7"
+name = "Microns-Combiner"
+version = "0.3.0"
 description = "Provides common functions to download and process data from the mm3 data."
 keywords = ["neuroscience"]
 classifiers = ["Development Status :: 2 - Pre-Alpha",
@@ -13,7 +13,7 @@ classifiers = ["Development Status :: 2 - Pre-Alpha",
  "Operating System :: OS Independent",
  "Programming Language :: Python :: 3",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 packages = [{include = ""}]
 dynamic = ["version", "readme"]
 authors = [{name = "Victor Buendia", email = "victor.buendia@unibocconi.it"}, {name = "Margherita Premi", email = "margherita.premi@gmail.com"}]
@@ -21,8 +21,9 @@ maintainers = [{name = "All contributors"}]
 readme = "README.md"
 
 dependencies = [
-    "numpy",
+    "numpy<2.1",
     "standard_transform",
+    "matplotlib",
     "pandas",
     "caveclient",
     "tqdm", 

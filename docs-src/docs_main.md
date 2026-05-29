@@ -1,13 +1,13 @@
-# MICrONS DataCleaner Docs
+# MICrONS Combiner Docs
 
-This webpage contains all the documentation for the [MICrONS DataCleaner](https://github.com/MICrONS-Milano-CoLab/MICrONS-datacleaner/) package. 
+This webpage contains all the documentation for the [MICrONS Combiner](https://github.com/MICrONS-Milano-CoLab/MICrONS-combiner/) package. 
 
 ## Install 📥
 
 You can install the package from PyPi via 
 
 ```python
-pip install microns-datacleaner
+pip install microns-combiner
 ```
 
 ## Quick Start ⏩
@@ -20,7 +20,7 @@ The package is initiated by importing and generating an instance of the class, w
 
 ```python
 #Import the lib
-import microns_datacleaner as mic
+import microns_combiner as mic
 
 #Target version and download folder
 cleaner = mic.MicronsDataCleaner(datadir = "data", version=1300, download_policy='minimum') 
