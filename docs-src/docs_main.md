@@ -23,7 +23,7 @@ The package is initiated by importing and generating an instance of the class, w
 import microns_combiner as mic
 
 #Target version and download folder
-cleaner = mic.MicronsDataCleaner(datadir = "data", version=1300, download_policy='minimum') 
+cleaner = mic.MicronsCombiner(datadir = "data", version=1300, download_policy='minimum') 
 
 #Download the data
 cleaner.download_nucleus_data()
@@ -41,7 +41,7 @@ units, segments = cleaner.process_nucleus_data(functional_data=None)
 
 The `segments` variable is a table with the resulting segmentation of the layers. `units` includes all the information about all AIBS classified units. The spatial position is already transformed into pial coordinates, with Y being the depth. Observe that the table includes also nonneuronal objects.
 
-The raw dataset contains objects with duplicated `pt_root_id` that can be overmerged objects. These include fraction of an axon, spine heads, or multisoma objects. In many computational neuroscience applications, these should be discarded. The MICrONS DataCleaner package does this automatically when constructing the unit table. As a result, the `units` table has unique `nucleus_id` and `pt_root_id`.
+The raw dataset contains objects with duplicated `pt_root_id` that can be overmerged objects. These include fraction of an axon, spine heads, or multisoma objects. In many computational neuroscience applications, these should be discarded. The MICrONS Combiner package does this automatically when constructing the unit table. As a result, the `units` table has unique `nucleus_id` and `pt_root_id`.
 
 The flag `functional_data` allows for several options to integrate information from the functional dataset (see details in the API). In particular, it can add manually coregistrated `session`, `scan_idx` and `unit_id` in order to match the connectomics with the functional data. 
 
@@ -87,7 +87,7 @@ cleaner.merge_synapses(syn_table_name="example_merged_synapses")
 
 ### Filtering
 
-The package includes a submodule `mic_datacleaner.filters` in order to easily query the constructed unit and connections tables. The function `filter_neurons` can be used to subset neurons by several conditions at the same time:
+The package includes a submodule `mic_combiner.filters` in order to easily query the constructed unit and connections tables. The function `filter_neurons` can be used to subset neurons by several conditions at the same time:
 
 ```python
 #All neurons that (1) are in area V1 (2) have proofread axons (3) are either in L2/3 or L4 
@@ -139,7 +139,7 @@ To construct the tables the package uses results from the following papers of th
 To generate these docs locally in your computer, you need [pdoc](https://pdoc.dev/). Then, fromn the root directory of the repository, run
 
 ```
-pdoc -t docs-src/template src/microns_datacleaner/ -o docs/
+pdoc -t docs-src/template src/microns_combiner/ -o docs/
 ```
 
 The docs will be generated in the `docs/` folder in HTML format, which can be checked with the browser. 
