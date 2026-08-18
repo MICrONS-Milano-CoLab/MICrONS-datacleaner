@@ -31,12 +31,12 @@ class MicronsCombiner:
     """
     Version of the client we are using
     """
-    version = 1718 
+    version = 1822 
 
     """
     Supported 
     """
-    SUPPORTED_VERSIONS = [1078, 1181, 1300, 1412, 1507, 1621, 1718]
+    SUPPORTED_VERSIONS = [1078, 1181, 1300, 1412, 1507, 1621, 1718, 1822]
 
 
     def __init__(self, datadir="data", version=1621, download_policy='minimum', extra_tables=[]):
