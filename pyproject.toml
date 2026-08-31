@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "Microns-Combiner"
-version = "0.3.1"
+version = "0.4.0"
 description = "Provides common functions to download and process data from the mm3 data."
 keywords = ["neuroscience"]
 classifiers = ["Development Status :: 2 - Pre-Alpha",
@@ -29,5 +29,6 @@ dependencies = [
     "tqdm", 
     "scipy",
     "pyyaml",
-    "h5py"
+    "h5py",
+    "cloud-files"
 ]

@@ -7,7 +7,7 @@ from tqdm import tqdm
 from importlib import resources
 import yaml
 
-def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='left'):
+def _merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='left'):
     """
     General function to add new columns to the nucleus table in a flexible way. 
 
@@ -83,7 +83,7 @@ def merge_columns(nucleus_df, table, columns=None, method="nucleus_id", how='lef
     return merged.drop(columns=columns2drop)
 
 
-def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
+def _merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
     """
     Merges the nucleus table with cell type classifications.
 
@@ -105,11 +105,11 @@ def merge_nucleus_with_cell_types(nucleus_df, cell_type_df):
         raise ValueError('Empty dataframe provided to merge_nucleus_with_cell_types')
 
     # Perform a merge of both tables and keep only the desired columns
-    merged = merge_columns(nucleus_df, cell_type_df, columns=['classification_system', 'cell_type'], how='inner')
+    merged = _merge_columns(nucleus_df, cell_type_df, columns=['classification_system', 'cell_type'], how='inner')
     return merged[['nucleus_id', 'pt_root_id', 'pt_position_x', 'pt_position_y', 'pt_position_z', 'classification_system', 'cell_type']]
 
 
-def merge_brain_area(nucleus_df, areas):
+def _merge_brain_area(nucleus_df, areas):
     """
     Merges the nucleus table with brain area information.
 
@@ -131,13 +131,13 @@ def merge_brain_area(nucleus_df, areas):
         raise ValueError('Empty dataframe provided to merge_brain_area')
 
     # Perform a merge of both tables 
-    merged = merge_columns(nucleus_df, areas, columns=['tag'], how='inner')
+    merged = _merge_columns(nucleus_df, areas, columns=['tag'], how='inner')
 
     # Rename the column
     return merged.rename(columns={'tag' : 'brain_area'})
 
 
-def merge_proofreading_status(nucleus_df, proofreading, version):
+def _merge_proofreading_status(nucleus_df, proofreading, version):
     """
     Merges proofreading status information into the nucleus table.
 
@@ -164,14 +164,14 @@ def merge_proofreading_status(nucleus_df, proofreading, version):
         raise ValueError('Empty nucleus dataframe provided to merge_proofreading_status')
 
     # Perform a merge of both tables from the desired columns 
-    merged = merge_columns(nucleus_df, proofreading, columns=['strategy_axon', 'strategy_dendrite'], method='pt_root_id', how='left')
+    merged = _merge_columns(nucleus_df, proofreading, columns=['strategy_axon', 'strategy_dendrite'], method='pt_root_id', how='left')
 
     merged.loc[merged['strategy_axon'].isna(), 'strategy_axon']         = 'none'
     merged.loc[merged['strategy_dendrite'].isna(), 'strategy_dendrite'] = 'none'
     return merged
 
 
-def merge_functional_properties(nucleus_df, functional, mode='best_only'):
+def _merge_functional_properties(nucleus_df, functional, mode='best_only'):
     """
     Merges functional properties into the nucleus DataFrame using one of several modes.
     This function enriches a nucleus DataFrame with functional data. It operates
@@ -227,10 +227,10 @@ def merge_functional_properties(nucleus_df, functional, mode='best_only'):
     functional = functional.drop(columns=['pt_root_id'])
 
     # Do the merge
-    return merge_columns(nucleus_df, functional, how='left')
+    return _merge_columns(nucleus_df, functional, how='left')
 
 
-def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col='pt_position_z'):
+def _transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col='pt_position_z'):
     """
     Transforms positions from voxels to μm.
     
@@ -275,7 +275,7 @@ def transform_positions(df, x_col='pt_position_x', y_col='pt_position_y', z_col=
     return df
 
 
-def divide_volume_into_segments(cells_df, table_used, segment_size=10.0, threshold_L23 = 300):
+def _divide_volume_into_segments(cells_df, table_used, segment_size=10.0, threshold_L23 = 300):
     """
     Segments the brain volume along the y-axis and assigns a dominant cortical layer.
    
@@ -369,7 +369,7 @@ def divide_volume_into_segments(cells_df, table_used, segment_size=10.0, thresho
     return segments_df
 
 
-def merge_segments_by_layer(segments_df):
+def _merge_segments_by_layer(segments_df):
     """
     Merge segments that belong to the same layer.
     This is useful for defining the final boundaries of each cortical layer.
@@ -444,7 +444,7 @@ def merge_segments_by_layer(segments_df):
     return merged_df.sort_values('y_start')
 
 
-def add_layer_info(neurons_df, segments):
+def _add_layer_info(neurons_df, segments):
     """
     Annotates a neuron DataFrame with layer information based on y-position.
     

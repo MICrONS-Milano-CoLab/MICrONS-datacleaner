@@ -161,6 +161,19 @@ class MicronsCombiner:
         # Eliminate any 'None' value that could have appeared
         self.tables_2_download = [x for x in self.tables_2_download if x is not None] 
 
+    def is_archived(self):
+        """
+        Checks if the current version has been archived or can be queried by CAVE.
+
+        Parameters:
+        -----------
+            None
+        Returns:
+        --------
+            is_archived: bool
+                True if the version has been archived, False if it can be queried.
+        """
+        return down._is_archived(self.client)
     
     def download_functional_data(self):
         """
@@ -184,7 +197,7 @@ class MicronsCombiner:
         """
 
         os.makedirs(f"{self.homedir}/{self.datadir}/functional", exist_ok=True)
-        down.download_functional_data(f"{self.homedir}/{self.datadir}/functional/microns_functional.h5")
+        down._download_functional_data(f"{self.homedir}/{self.datadir}/functional/microns_functional.h5")
 
 
     def _initialize_client(self, version):
@@ -213,13 +226,23 @@ class MicronsCombiner:
             self.client = CAVEclient('minnie65_public') 
             self.client.version = version
             logging.debug("CAVEclient initialized successfully.")
+
+            if self.is_archived():
+                warning_text = f"""[IMPORTANT WARNING]: version v{version} is ARCHIVED. 
+                This means it will be downloaded from a static mirror instead of CAVEclient API. 
+                The full synapse table (20GB!) must be downloaded to obtain a connectivity table.
+                Archived versions are recommended only for reproducibility tests. For new projects, please use a more recent version."""
+
+                print(warning_text)
+                logging.debug(warning_text)
+
         except requests.HTTPError as excep:
             if '503' in str(excep):
                 logging.error("HTTP error 503: the MICrONS server is temporarily unavailable. Client cannot be used for new downloads.")
                 print("HTTP error 503: the MICrONS server is temporarily unavailable. Client cannot be used for new downloads.")
             else:
                 logging.error("Unhandled exception during while setting up the client: " + str(excep))
-                raise excep
+            raise excep
         return
 
     
@@ -281,7 +304,7 @@ class MicronsCombiner:
         """
 
         logging.info(f"Downloading nucleus data tables: {self.tables_2_download}")
-        down.download_tables(self.client,f"{self.data_storage}/raw/",  self.tables_2_download)
+        down._download_tables(self.client,f"{self.data_storage}/raw/",  self.tables_2_download)
         logging.info("Nucleus data download completed.")
         return
 
@@ -306,12 +329,12 @@ class MicronsCombiner:
         """
 
         logging.info(f"Downloading custom tables: {table_names}")
-        down.download_tables(self.client,f"{self.data_storage}/raw/",  table_names) 
+        down._download_tables(self.client,f"{self.data_storage}/raw/",  table_names) 
         logging.info("Custom tables download completed.")
         return
 
 
-    def download_synapse_data(self, presynaptic_set, postsynaptic_set, neurs_per_steps = 500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=True):
+    def download_synapse_data(self, presynaptic_set, postsynaptic_set, syn_table_name='synapse_table', neurs_per_steps = 500, start_index=0, max_retries=10, delay=5, drop_synapses_duplicates=True, chunksize=500_000):
         """
         Downloads synaptic connections between specified sets of neurons.
         
@@ -345,32 +368,27 @@ class MicronsCombiner:
                 tables as a series of CSV files in the `raw/synapses` directory.
         """
        
-        logging.debug("Starting synapse data download.")
-        down.connectome_constructor(self.client, presynaptic_set, postsynaptic_set, f"{self.data_storage}/raw/synapses",
-                                   neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
-        logging.debug("Synapse data download completed.")
+        savefolder = f"{self.data_storage}/raw/synapses"
+
+        if self.is_archived():
+            #For the static case, just download everything and do the filtering
+            logging.debug("Starting STATIC synapse data download.")
+            down._download_static_synapses(self.client, savefolder)
+            down._filter_static_synapses(savefolder, presynaptic_set, postsynaptic_set, syn_table_name, drop_synapses_duplicates=drop_synapses_duplicates, chunksize=chunksize)
+            logging.debug("Synapse data download completed.")
+        else:
+            #For the usual case, download all files one by one and then finish by merging all information
+            logging.debug("Starting synapse data download.")
+            down._connectome_constructor(self.client, presynaptic_set, postsynaptic_set, savefolder, 
+                                    neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
+            logging.debug("Synapse data download completed.")
+            down.merge_connection_tables(savefolder, syn_table_name)
         return
 
-    
-    def merge_synapses(self, syn_table_name):
-        """
-        Merges downloaded synapse data batches into a single CSV file.
+    def filter_static_synapses(self, presynaptic_set, postsynaptic_set, syn_table_name, drop_synapses_duplicates=True, chunksize=500_000):
+        savefolder = f"{self.data_storage}/raw/synapses"
+        down._filter_static_synapses(savefolder, presynaptic_set, postsynaptic_set, syn_table_name, drop_synapses_duplicates=drop_synapses_duplicates)
 
-        Parameters:
-        -----------
-            syn_table_name: str
-                The name for the output file that will contain the merged synapse data.
-                
-        Returns:
-        --------
-            None.
-                This method does not return a value. It saves the merged table to a file.
-        """
-        
-        down.merge_connection_tables(f"{self.data_storage}/raw", syn_table_name)
-        return
-
-    
     def merge_table(self, unit_table, new_table, columns, method="nucleus_id", how='left'):
         """
         Merges new columns from a source table into the main unit table.
@@ -398,7 +416,7 @@ class MicronsCombiner:
                 The merged DataFrame with the newly added columns.
         """
         
-        return proc.merge_columns(unit_table, new_table, columns, method=method, how=how)
+        return proc._merge_columns(unit_table, new_table, columns, method=method, how=how)
 
     def _patch_tables(self, unit_table):
         """
@@ -490,19 +508,19 @@ class MicronsCombiner:
 
             # Call all the merge functions. First, cell types
             logging.debug("Merging nucleus data with cell types.")
-            nucleus_merged = proc.merge_nucleus_with_cell_types(nucleus, celltype)
+            nucleus_merged = proc._merge_nucleus_with_cell_types(nucleus, celltype)
 
             # Then, brain area. 
             logging.debug("Merging brain area information.")
-            nucleus_merged = proc.merge_brain_area(nucleus_merged, areas)
+            nucleus_merged = proc._merge_brain_area(nucleus_merged, areas)
 
             # Proofreading info
             logging.debug("Merging proofreading status.")
-            nucleus_merged = proc.merge_proofreading_status(nucleus_merged, proofread, self.version)
+            nucleus_merged = proc._merge_proofreading_status(nucleus_merged, proofread, self.version)
 
             # Get the correct positions
             logging.debug("Transforming positions.")
-            nucleus_merged = proc.transform_positions(nucleus_merged)
+            nucleus_merged = proc._transform_positions(nucleus_merged)
 
 
             # Clean the resulting table by eliminating all multisoma objects. 
@@ -513,10 +531,10 @@ class MicronsCombiner:
             # Finally, functional properties. 
             logging.debug("Adding functional information")
             if functional_data in ['best_only', 'all']: 
-                nucleus_merged = proc.merge_functional_properties(nucleus_merged, funcprops, mode=functional_data)
+                nucleus_merged = proc._merge_functional_properties(nucleus_merged, funcprops, mode=functional_data)
                 nucleus_merged.loc[nucleus_merged['tuning_type'].isna(), 'tuning_type'] = 'not_matched'
             elif functional_data == 'match':
-                nucleus_merged = proc.merge_functional_properties(nucleus_merged, coreg, mode=functional_data)
+                nucleus_merged = proc._merge_functional_properties(nucleus_merged, coreg, mode=functional_data)
                 nucleus_merged.loc[nucleus_merged['tuning_type'].isna(), 'tuning_type'] = 'not_matched'
             else:
                 nucleus_merged['tuning_type'] = 'not_matched'
@@ -526,10 +544,10 @@ class MicronsCombiner:
 
             # Segment the data and add the information about layers
             logging.debug("Segmenting volume and adding layer info.")
-            segments = proc.divide_volume_into_segments(nucleus_merged, self.tables['celltype'])
-            segments = proc.merge_segments_by_layer(segments)
+            segments = proc._divide_volume_into_segments(nucleus_merged, self.tables['celltype'])
+            segments = proc._merge_segments_by_layer(segments)
 
-            proc.add_layer_info(nucleus_merged, segments)
+            proc._add_layer_info(nucleus_merged, segments)
 
             return nucleus_merged, segments
 
