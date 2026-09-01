@@ -41,7 +41,6 @@ def _download_tables(client, path2download, tables2download):
     if _is_archived(client):
         _static_table_download(client.version, path2download, tables2download)
     else:
-        print("not archived!!!")
         _api_table_download(client, path2download, tables2download) 
 
 

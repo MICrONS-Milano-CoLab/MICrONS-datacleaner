@@ -5,17 +5,17 @@
 
 This project contains tools to work with the [MICrONS Cortical MM3 dataset](https://www.microns-explorer.org/cortical-mm3), providing a **robust interface** to interact with the nucleus data. 
 
-> From version 0.3.0.0, the package will be renamed to microns-combiner in order to better reflect its usage. 
-> Latest version with name 'datacleaner' will be 0.2.  
+> From version 0.3.0.0, the package has been renamed to microns-combiner in order to better reflect its usage. 
+> Latest version with name 'datacleaner' is 0.2 and it has been archived.  
 
 ## Key features 
 
-- **Simple interface** to download and keep organized anatomical data via CAVEClient. 
+- **Simple interface** to download and keep organized anatomical data via CAVEClient or archived versions. 
 - **Allows to query the synapse table in chunks** avoiding common pitfalls. 
 - **Easily process nucleus annotation tables**. 
 - **Automatically segment** the brain volume into cortical **layers.**
 - **Tools for filtering** and constructing connectome subsets. 
-- Basic interface to add functional properties, including **tuning curves and selectivity**. 
+- **Interface to access the full functional dataset** in a simplified way.
 
 ## Install 📥
 
@@ -32,13 +32,13 @@ pip install microns-combiner
 import microns_combiner as mic
 
 #Target version and download folder
-cleaner = mic.MicronsCombiner(datadir = "data", version=1300) 
+combiner = mic.MicronsCombiner(datadir = "data", version=1300) 
 
 #Download the data
-cleaner.download_nucleus_data()
+combiner.download_nucleus_data()
 
 #Process the downloaded data and segment into layers
-units, segments = cleaner.process_nucleus_data()
+units, segments = combiner.process_nucleus_data()
 ```
 
 - **Filter easily!** How can we get all neurons in V1, layers L2/3 and L4 with proofread axons?
@@ -52,10 +52,10 @@ units_filter = fl.filter_neurons(units, layer=['L2/3', 'L4'], proofread='ax_clea
 ```python
 preids  = units_filter['pt_root_id']
 postids = units_filter['pt_root_id']
-cleaner.download_synapse_data(preids, postids)
+combiner.download_synapse_data(preids, postids)
 
 #Connection problems at chunk number 23? Just restart from there
-cleanerdownload_synapse_data(preids, postids, start_index=23)
+combinerdownload_synapse_data(preids, postids, start_index=23)
 ```
 
 Check the docs and our tutorial notebook just below to get started!
