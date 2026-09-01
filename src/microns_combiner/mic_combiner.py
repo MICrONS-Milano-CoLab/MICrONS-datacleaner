@@ -382,7 +382,7 @@ class MicronsCombiner:
             down._connectome_constructor(self.client, presynaptic_set, postsynaptic_set, savefolder, 
                                     neurs_per_steps = neurs_per_steps, start_index=start_index, max_retries=max_retries, delay=delay, drop_synapses_duplicates=drop_synapses_duplicates)
             logging.debug("Synapse data download completed.")
-            down.merge_connection_tables(savefolder, syn_table_name)
+            down._merge_connection_tables(savefolder, syn_table_name)
         return
 
     def filter_static_synapses(self, presynaptic_set, postsynaptic_set, syn_table_name, drop_synapses_duplicates=True, chunksize=500_000):

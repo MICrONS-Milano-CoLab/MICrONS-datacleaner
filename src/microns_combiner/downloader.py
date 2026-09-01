@@ -440,7 +440,7 @@ def _time_format(seconds):
         return f'{seconds:.0f}s'
 
 
-def merge_connection_tables(savefolder, filename):
+def _merge_connection_tables(savefolder, filename):
     """
     Merges individual connection table files into a single master file.
     This function scans a specified directory for connection table files
